@@ -11,6 +11,8 @@ set(GODOT_ROOT_DIR ../../../..)
 # Get sources
 file(GLOB_RECURSE SOURCES ${GODOT_ROOT_DIR}/*.c**)
 file(GLOB_RECURSE HEADERS ${GODOT_ROOT_DIR}/*.h**)
+list(FILTER SOURCES EXCLUDE REGEX ".*/android/build/nativeSrcsConfigs/\\.cxx/.*")
+list(FILTER HEADERS EXCLUDE REGEX ".*/android/build/nativeSrcsConfigs/\\.cxx/.*")
 
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 target_include_directories(${PROJECT_NAME}
