@@ -47,7 +47,7 @@ jobs:
           export_status=${PIPESTATUS[0]}
           set -e
           if [ "$export_status" -ne 0 ]; then
-            error_summary="$(grep -E 'ERROR:|Error:|FAILED|failed|Invalid|missing|not found' builds/export.log | tail -n 12 | tr '\n' ' ' | sed 's/%/%25/g; s/\r/%0D/g')"
+            error_summary="$(tail -n 80 builds/export.log | grep -v 'Unable to load fontconfig' | tr '\n' ' ' | sed 's/%/%25/g; s/\r/%0D/g')"
             echo "::error title=Godot Android export failed::$error_summary"
             exit "$export_status"
           fi
