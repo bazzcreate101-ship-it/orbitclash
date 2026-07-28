@@ -75,6 +75,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p builds
+          find android/build -name '*.import' -delete
           set +e
           godot --headless --path . \
             --export-debug "Android Debug" builds/orbit-clash-debug.apk \
