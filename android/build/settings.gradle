@@ -21,7 +21,6 @@ rootProject.name = "Godot"
 
 include ':app'
 include ':lib'
-include ':nativeSrcsConfigs'
 include ':editor'
 
 include ':assetPacks:installTime'
