@@ -480,7 +480,28 @@ func _start_mobile_battle() -> void:
     selected_right = rng.randi_range(0, roster.size() - 1)
     while selected_right == selected_left:
         selected_right = rng.randi_range(0, roster.size() - 1)
-    _start_battle()
+    state = "battle"
+    battle_over = false
+    paused_battle = false
+    simulation_accumulator = 0.0
+    sim_speed = 1.0
+    elapsed = 0.0
+    projectiles.clear()
+    zones.clear()
+    gates.clear()
+    hazards.clear()
+    sparks.clear()
+    floating_texts.clear()
+    shockwaves.clear()
+    trails = [[], []]
+    fighters = [
+        _make_fighter(roster[selected_left], Vector2(190, 465), Vector2(205, 248).rotated(rng.randf_range(-0.28, 0.28)), 0),
+        _make_fighter(roster[selected_right], Vector2(530, 770), Vector2(-228, -205).rotated(rng.randf_range(-0.28, 0.28)), 1)
+    ]
+    countdown = 0.0
+    center_label.text = ""
+    footer_label.text = "Auto battle - abilities scale - last orb standing wins"
+    _update_ui()
 func _play(key: String) -> void:
     if not sound_on or not audio_players.has(key): return
     var p: AudioStreamPlayer = audio_players[key]
