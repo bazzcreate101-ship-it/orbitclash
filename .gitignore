@@ -1,0 +1,7 @@
+.godot/
+builds/*
+!builds/.gitkeep
+*.apk
+*.aab
+*.keystore
+*.jks
