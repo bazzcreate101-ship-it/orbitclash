@@ -43,7 +43,7 @@ jobs:
           set -o pipefail
           mkdir -p builds
           set +e
-          godot --headless --verbose --path . \
+          godot --headless --path . \
             --export-debug "Android Debug" builds/orbit-clash-debug.apk \
             2>&1 | tee builds/export.log
           export_status=${PIPESTATUS[0]}
