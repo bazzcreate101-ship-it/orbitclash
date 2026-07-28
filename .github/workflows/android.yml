@@ -34,7 +34,7 @@ jobs:
           cp -a /root/.local/share/godot/export_templates/4.2.2.stable \
             "$HOME/.local/share/godot/export_templates/4.2.2.stable"
           sdkmanager --sdk_root="$ANDROID_HOME" \
-            "platform-tools" "platforms;android-33" "build-tools;33.0.2"
+            "platform-tools" "platforms;android-34" "build-tools;34.0.0"
           JAVA_SDK_PATH="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
           cat > "$HOME/.config/godot/editor_settings-4.tres" <<EOF
           [gd_resource type="EditorSettings" format=3]
