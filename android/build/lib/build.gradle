@@ -183,3 +183,13 @@ android {
         }
     }
 }
+
+afterEvaluate {
+    tasks.matching { task ->
+        task.name.startsWith("package") && task.name.endsWith("Resources")
+    }.configureEach {
+        doFirst {
+            delete fileTree(dir: "res", include: "**/*.import")
+        }
+    }
+}
