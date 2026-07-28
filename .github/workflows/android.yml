@@ -20,7 +20,7 @@ jobs:
     timeout-minutes: 25
 
     container:
-      image: barichello/godot-ci:4.6.3
+      image: barichello/godot-ci:4.2.2
 
     steps:
       - name: Check out project
@@ -31,8 +31,8 @@ jobs:
           mkdir -p "$HOME/.local/share/godot/export_templates"
           mkdir -p "$HOME/.config"
           cp -a /root/.config/godot "$HOME/.config/"
-          cp -a /root/.local/share/godot/export_templates/4.6.3.stable \
-            "$HOME/.local/share/godot/export_templates/4.6.3.stable"
+          cp -a /root/.local/share/godot/export_templates/4.2.2.stable \
+            "$HOME/.local/share/godot/export_templates/4.2.2.stable"
           sdkmanager --sdk_root="$ANDROID_HOME" \
             "platform-tools" "platforms;android-35" "build-tools;35.0.1"
           godot --version
@@ -50,7 +50,7 @@ jobs:
           set -e
           if [ "$export_status" -ne 0 ]; then
             error_summary="$(grep -B 3 -A 8 'Cannot export project' builds/export.log | tail -n 20 | sed -E 's/\x1B\[[0-9;]*[mK]//g' | tr '\n' ' ' | sed 's/%/%25/g; s/\r/%0D/g')"
-            sdk_inventory="ANDROID_HOME=$ANDROID_HOME; build-tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -printf '%f,' 2>/dev/null); platforms=$(find "$ANDROID_HOME/platforms" -mindepth 1 -maxdepth 1 -printf '%f,' 2>/dev/null); setting=$(grep 'android_sdk_path' "$HOME/.config/godot/editor_settings-4.6.tres" 2>/dev/null | tr '\n' ' ')"
+            sdk_inventory="ANDROID_HOME=$ANDROID_HOME; build-tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -printf '%f,' 2>/dev/null); platforms=$(find "$ANDROID_HOME/platforms" -mindepth 1 -maxdepth 1 -printf '%f,' 2>/dev/null); setting=$(grep 'android_sdk_path' "$HOME/.config/godot"/editor_settings-4*.tres 2>/dev/null | tr '\n' ' ')"
             echo "::error title=Godot Android export failed::$sdk_inventory | $error_summary"
             exit "$export_status"
           fi
