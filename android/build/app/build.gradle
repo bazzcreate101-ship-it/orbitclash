@@ -196,6 +196,16 @@ android {
     }
 }
 
+afterEvaluate {
+    tasks.matching { task ->
+        task.name.startsWith("merge") && task.name.endsWith("Resources")
+    }.configureEach {
+        doFirst {
+            delete fileTree(dir: "res", include: "**/*.import")
+        }
+    }
+}
+
 task copyAndRenameDebugApk(type: Copy) {
     from "$buildDir/outputs/apk/debug/android_debug.apk"
     into getExportPath()
