@@ -35,8 +35,6 @@ jobs:
             "$HOME/.local/share/godot/export_templates/4.2.2.stable"
           sdkmanager --sdk_root="$ANDROID_HOME" \
             "platform-tools" "platforms;android-34" "build-tools;34.0.0"
-          apt-get update
-          apt-get install -y scons
           JAVA_SDK_PATH="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
           if [ ! -f /root/debug.keystore ]; then
             keytool -genkeypair -v \
@@ -75,7 +73,6 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p builds
-          find android/build -name '*.import' -delete
           set +e
           godot --headless --path . \
             --export-debug "Android Debug" builds/orbit-clash-debug.apk \
@@ -90,7 +87,10 @@ jobs:
           fi
 
       - name: Verify APK
-        run: test -s builds/orbit-clash-debug.apk
+        run: |
+          test -s builds/orbit-clash-debug.apk
+          test "$(stat -c%s builds/orbit-clash-debug.apk)" -gt 10000000
+          unzip -l builds/orbit-clash-debug.apk | grep -E 'lib/arm64-v8a/.+\.so'
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v7
