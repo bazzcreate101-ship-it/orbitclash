@@ -36,6 +36,17 @@ jobs:
           sdkmanager --sdk_root="$ANDROID_HOME" \
             "platform-tools" "platforms;android-34" "build-tools;34.0.0"
           JAVA_SDK_PATH="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
+          if [ ! -f /root/debug.keystore ]; then
+            keytool -genkeypair -v \
+              -keystore /root/debug.keystore \
+              -storepass android \
+              -alias androiddebugkey \
+              -keypass android \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
           cat > "$HOME/.config/godot/editor_settings-4.tres" <<EOF
           [gd_resource type="EditorSettings" format=3]
 
@@ -52,6 +63,13 @@ jobs:
 
       - name: Export Android APK
         shell: bash
+        env:
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: /root/debug.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
+          GODOT_ANDROID_KEYSTORE_RELEASE_PATH: /root/debug.keystore
+          GODOT_ANDROID_KEYSTORE_RELEASE_USER: androiddebugkey
+          GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD: android
         run: |
           set -o pipefail
           mkdir -p builds
