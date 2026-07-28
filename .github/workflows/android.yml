@@ -33,7 +33,8 @@ jobs:
           cp -a /root/.config/godot "$HOME/.config/"
           cp -a /root/.local/share/godot/export_templates/4.6.3.stable \
             "$HOME/.local/share/godot/export_templates/4.6.3.stable"
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.1"
+          sdkmanager --sdk_root="$ANDROID_HOME" \
+            "platform-tools" "platforms;android-35" "build-tools;35.0.1"
           godot --version
 
       - name: Export Android APK
