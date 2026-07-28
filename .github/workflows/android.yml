@@ -35,6 +35,7 @@ jobs:
             "$HOME/.local/share/godot/export_templates/4.2.2.stable"
           sdkmanager --sdk_root="$ANDROID_HOME" \
             "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          python3 -m pip install --no-cache-dir --upgrade scons
           JAVA_SDK_PATH="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
           if [ ! -f /root/debug.keystore ]; then
             keytool -genkeypair -v \
