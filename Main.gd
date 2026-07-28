@@ -60,11 +60,14 @@ var selected_right := 1
 
 func _ready() -> void:
     rng.randomize()
-    mobile_build = OS.has_feature("mobile")
+    mobile_build = OS.has_feature("android") or OS.has_feature("mobile")
     if not mobile_build:
         _make_audio()
-    _make_ui()
-    _show_menu()
+        _make_ui()
+        _show_menu()
+    else:
+        _make_mobile_ui()
+        _start_mobile_battle()
     queue_redraw()
 
 func _process(delta: float) -> void:
@@ -110,6 +113,9 @@ func _simulate_battle(delta: float) -> void:
     _update_ui()
 
 func _show_menu() -> void:
+    if mobile_build:
+        _start_mobile_battle()
+        return
     state = "menu"
     battle_over = false
     paused_battle = false
@@ -135,17 +141,26 @@ func _show_menu() -> void:
     _sync_menu_text()
 
 func _start_battle() -> void:
-    selected_left = left_pick.selected
-    selected_right = right_pick.selected
+    if left_pick != null:
+        selected_left = left_pick.selected
+    if right_pick != null:
+        selected_right = right_pick.selected
     if selected_right == selected_left:
         selected_right = (selected_left + 1) % roster.size()
-        right_pick.select(selected_right)
-    menu_panel.visible = false
-    rematch_button.visible = false
-    menu_button.visible = false
-    pause_button.visible = true
-    speed_button.visible = true
-    sound_button.visible = true
+        if right_pick != null:
+            right_pick.select(selected_right)
+    if menu_panel != null:
+        menu_panel.visible = false
+    if rematch_button != null:
+        rematch_button.visible = false
+    if menu_button != null:
+        menu_button.visible = false
+    if pause_button != null:
+        pause_button.visible = true
+    if speed_button != null:
+        speed_button.visible = true
+    if sound_button != null:
+        sound_button.visible = true
     elapsed = 0.0
     battle_over = false
     paused_battle = false
@@ -419,6 +434,11 @@ func _update_gates(delta: float) -> void:
 func _finish_battle(winner: Dictionary) -> void:
     battle_over = true; state = "result"; paused_battle = false
     center_label.text = "%s WINS!" % winner.name
+    if mobile_build:
+        footer_label.text = "Battle %.1fs - auto rematch" % elapsed
+        get_tree().create_timer(2.2).timeout.connect(_start_mobile_battle)
+        _spawn_ring(winner.pos, winner.body_color, 32); _spawn_shockwave(winner.pos, winner.body_color, 1.0); _play("win")
+        return
     footer_label.text = "Battle %.1fs • REMATCH generates another outcome" % elapsed
     rematch_button.visible = true; menu_button.visible = true; pause_button.visible = false; speed_button.visible = false
     _spawn_ring(winner.pos, winner.body_color, 32); _spawn_shockwave(winner.pos, winner.body_color, 1.0); _play("win")
@@ -448,6 +468,19 @@ func _update_fx(delta: float) -> void:
 func _make_audio() -> void:
     for key in ["hit","crit","wall","ability","freeze","gate","shoot","start","win"]:
         var p := AudioStreamPlayer.new(); p.stream = load("res://audio/%s.wav" % key); p.volume_db = -5.0 if key != "wall" else -12.0; add_child(p); audio_players[key] = p
+
+func _make_mobile_ui() -> void:
+    title_label = Label.new(); title_label.text = "ORBIT CLASH"; title_label.position = Vector2(0,26); title_label.size = Vector2(W,55); title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; title_label.add_theme_font_size_override("font_size",39); add_child(title_label)
+    subtitle_label = Label.new(); subtitle_label.position = Vector2(0,79); subtitle_label.size = Vector2(W,28); subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; subtitle_label.modulate = Color(0.72,0.74,0.82); subtitle_label.add_theme_font_size_override("font_size",16); add_child(subtitle_label)
+    center_label = Label.new(); center_label.position = Vector2(58,500); center_label.size = Vector2(604,165); center_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; center_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; center_label.add_theme_font_size_override("font_size",44); add_child(center_label)
+    footer_label = Label.new(); footer_label.position = Vector2(20,1240); footer_label.size = Vector2(W-40,26); footer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; footer_label.modulate = Color(0.70,0.73,0.80); footer_label.add_theme_font_size_override("font_size",14); add_child(footer_label)
+
+func _start_mobile_battle() -> void:
+    selected_left = rng.randi_range(0, roster.size() - 1)
+    selected_right = rng.randi_range(0, roster.size() - 1)
+    while selected_right == selected_left:
+        selected_right = rng.randi_range(0, roster.size() - 1)
+    _start_battle()
 func _play(key: String) -> void:
     if not sound_on or not audio_players.has(key): return
     var p: AudioStreamPlayer = audio_players[key]
