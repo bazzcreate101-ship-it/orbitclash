@@ -43,6 +43,7 @@ var speed_button: Button
 var sound_button: Button
 var sound_on := true
 var audio_players := {}
+var mobile_build := false
 
 var roster := [
     {"id":"staffmaster", "name":"STAFFMASTER", "color":Color("f1be45"), "weapon":Color("ffe59a"), "skill":"Echo Staff", "desc":"Hits grow the staff. Every 5 hits creates another orbiting echo weapon."},
@@ -59,7 +60,9 @@ var selected_right := 1
 
 func _ready() -> void:
     rng.randomize()
-    _make_audio()
+    mobile_build = OS.has_feature("mobile")
+    if not mobile_build:
+        _make_audio()
     _make_ui()
     _show_menu()
     queue_redraw()
@@ -517,6 +520,8 @@ func _ability_ratio(f: Dictionary) -> float:
     return 0.0
 
 func _draw() -> void:
+    if ThemeDB.fallback_font == null:
+        return
     var off := Vector2.ZERO
     if shake > 0.0: off = Vector2(rng.randf_range(-shake,shake),rng.randf_range(-shake,shake))
     draw_rect(Rect2(0,0,W,H),Color("0d1016"),true); _draw_background_grid()
