@@ -68,19 +68,40 @@ var roster := [
 var selected_left := 0
 var selected_right := 1
 
+func _boot_report(message: String) -> void:
+    var p := get_parent()
+    if p != null and p.has_method("report_boot"):
+        p.call("report_boot", message)
+
 func _ready() -> void:
+    call_deferred("_startup_sequence")
+
+func _startup_sequence() -> void:
+    _boot_report("MAIN READY: start")
+    await get_tree().process_frame
     rng.randomize()
     mobile_build = OS.has_feature("android") or OS.has_feature("mobile")
+    _boot_report("MAIN READY: audio")
+    await get_tree().process_frame
     _make_audio()
+    _boot_report("MAIN READY: ui")
+    await get_tree().process_frame
     _make_ui()
     if mobile_build:
+        _boot_report("MAIN READY: mobile roster")
+        await get_tree().process_frame
         selected_left = rng.randi_range(0, roster.size() - 1)
         selected_right = rng.randi_range(0, roster.size() - 1)
         while selected_right == selected_left:
             selected_right = rng.randi_range(0, roster.size() - 1)
+        _boot_report("MAIN READY: start battle")
+        await get_tree().process_frame
         _start_battle()
     else:
+        _boot_report("MAIN READY: menu")
+        await get_tree().process_frame
         _show_menu()
+    _boot_report("MAIN READY: complete")
     queue_redraw()
 
 func _process(delta: float) -> void:
