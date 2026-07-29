@@ -73,7 +73,14 @@ func _ready() -> void:
     mobile_build = OS.has_feature("android") or OS.has_feature("mobile")
     _make_audio()
     _make_ui()
-    _show_menu()
+    if mobile_build:
+        selected_left = rng.randi_range(0, roster.size() - 1)
+        selected_right = rng.randi_range(0, roster.size() - 1)
+        while selected_right == selected_left:
+            selected_right = rng.randi_range(0, roster.size() - 1)
+        _start_battle()
+    else:
+        _show_menu()
     queue_redraw()
 
 func _process(delta: float) -> void:
@@ -536,32 +543,23 @@ func _make_ui() -> void:
     subtitle_label = Label.new(); subtitle_label.position = Vector2(0,79); subtitle_label.size = Vector2(W,28); subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; subtitle_label.modulate = Color(0.72,0.74,0.82); subtitle_label.add_theme_font_size_override("font_size",16); add_child(subtitle_label)
     center_label = Label.new(); center_label.position = Vector2(58,500); center_label.size = Vector2(604,165); center_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; center_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; center_label.add_theme_font_size_override("font_size",44); add_child(center_label)
     footer_label = Label.new(); footer_label.position = Vector2(20,1240); footer_label.size = Vector2(W-40,26); footer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; footer_label.modulate = Color(0.70,0.73,0.80); footer_label.add_theme_font_size_override("font_size",14); add_child(footer_label)
+    if mobile_build:
+        mobile_left_label = Label.new(); mobile_left_label.position = Vector2(24,878); mobile_left_label.size = Vector2(672,26); mobile_left_label.add_theme_font_size_override("font_size",17); add_child(mobile_left_label)
+        mobile_right_label = Label.new(); mobile_right_label.position = Vector2(24,906); mobile_right_label.size = Vector2(672,26); mobile_right_label.add_theme_font_size_override("font_size",17); add_child(mobile_right_label)
+        mobile_left_prev_button = Button.new(); mobile_left_prev_button.text = "< LEFT"; mobile_left_prev_button.position = Vector2(24,944); mobile_left_prev_button.size = Vector2(140,52); mobile_left_prev_button.pressed.connect(func(): _cycle_selection(-1, true)); add_child(mobile_left_prev_button)
+        mobile_left_next_button = Button.new(); mobile_left_next_button.text = "LEFT >"; mobile_left_next_button.position = Vector2(172,944); mobile_left_next_button.size = Vector2(140,52); mobile_left_next_button.pressed.connect(func(): _cycle_selection(1, true)); add_child(mobile_left_next_button)
+        mobile_right_prev_button = Button.new(); mobile_right_prev_button.text = "< RIGHT"; mobile_right_prev_button.position = Vector2(24,1004); mobile_right_prev_button.size = Vector2(140,52); mobile_right_prev_button.pressed.connect(func(): _cycle_selection(-1, false)); add_child(mobile_right_prev_button)
+        mobile_right_next_button = Button.new(); mobile_right_next_button.text = "RIGHT >"; mobile_right_next_button.position = Vector2(172,1004); mobile_right_next_button.size = Vector2(140,52); mobile_right_next_button.pressed.connect(func(): _cycle_selection(1, false)); add_child(mobile_right_next_button)
+        mobile_random_button = Button.new(); mobile_random_button.text = "RANDOM"; mobile_random_button.position = Vector2(376,944); mobile_random_button.size = Vector2(140,52); mobile_random_button.pressed.connect(_randomize_matchup); add_child(mobile_random_button)
+        mobile_start_button = Button.new(); mobile_start_button.text = "RESTART"; mobile_start_button.position = Vector2(524,944); mobile_start_button.size = Vector2(140,52); mobile_start_button.pressed.connect(_start_battle); add_child(mobile_start_button)
+        pause_button = Button.new(); pause_button.text = "II"; pause_button.position = Vector2(530,118); pause_button.size = Vector2(54,48); pause_button.visible = true; pause_button.pressed.connect(_toggle_pause); add_child(pause_button)
+        speed_button = Button.new(); speed_button.text = "1x"; speed_button.position = Vector2(590,118); speed_button.size = Vector2(54,48); speed_button.visible = true; speed_button.pressed.connect(_cycle_speed); add_child(speed_button)
+        sound_button = Button.new(); sound_button.text = "SFX"; sound_button.position = Vector2(650,118); sound_button.size = Vector2(54,48); sound_button.visible = true; sound_button.pressed.connect(_toggle_sound); add_child(sound_button)
+        _refresh_mobile_menu_text()
+        return
     menu_panel = VBoxContainer.new(); menu_panel.position = Vector2(88,150); menu_panel.size = Vector2(544,930); menu_panel.add_theme_constant_override("separation",13); add_child(menu_panel)
     var h := Label.new(); h.text = "BUILD A MATCHUP"; h.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; h.add_theme_font_size_override("font_size",28); menu_panel.add_child(h)
     var intro := Label.new(); intro.text = "10 matchup fighters • physics-driven combat\npassives scale until the arena turns chaotic"; intro.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; intro.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; intro.custom_minimum_size = Vector2(0,58); intro.modulate = Color(0.36,0.32,0.28); menu_panel.add_child(intro)
-    if mobile_build:
-        left_pick = null
-        right_pick = null
-        var left_row := HBoxContainer.new(); left_row.add_theme_constant_override("separation", 8); menu_panel.add_child(left_row)
-        mobile_left_prev_button = Button.new(); mobile_left_prev_button.text = "<"; mobile_left_prev_button.custom_minimum_size = Vector2(64,56); mobile_left_prev_button.pressed.connect(func(): _cycle_selection(-1, true)); left_row.add_child(mobile_left_prev_button)
-        mobile_left_label = Label.new(); mobile_left_label.custom_minimum_size = Vector2(352,56); mobile_left_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; mobile_left_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; left_row.add_child(mobile_left_label)
-        mobile_left_next_button = Button.new(); mobile_left_next_button.text = ">"; mobile_left_next_button.custom_minimum_size = Vector2(64,56); mobile_left_next_button.pressed.connect(func(): _cycle_selection(1, true)); left_row.add_child(mobile_left_next_button)
-
-        var right_row := HBoxContainer.new(); right_row.add_theme_constant_override("separation", 8); menu_panel.add_child(right_row)
-        mobile_right_prev_button = Button.new(); mobile_right_prev_button.text = "<"; mobile_right_prev_button.custom_minimum_size = Vector2(64,56); mobile_right_prev_button.pressed.connect(func(): _cycle_selection(-1, false)); right_row.add_child(mobile_right_prev_button)
-        mobile_right_label = Label.new(); mobile_right_label.custom_minimum_size = Vector2(352,56); mobile_right_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; mobile_right_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; right_row.add_child(mobile_right_label)
-        mobile_right_next_button = Button.new(); mobile_right_next_button.text = ">"; mobile_right_next_button.custom_minimum_size = Vector2(64,56); mobile_right_next_button.pressed.connect(func(): _cycle_selection(1, false)); right_row.add_child(mobile_right_next_button)
-
-        matchup_label = Label.new(); matchup_label.custom_minimum_size = Vector2(0,238); matchup_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; matchup_label.add_theme_font_size_override("font_size",16); menu_panel.add_child(matchup_label)
-        mobile_random_button = Button.new(); mobile_random_button.text = "RANDOM MATCHUP"; mobile_random_button.custom_minimum_size = Vector2(0,60); mobile_random_button.pressed.connect(_randomize_matchup); menu_panel.add_child(mobile_random_button)
-        mobile_start_button = Button.new(); mobile_start_button.text = "START BATTLE"; mobile_start_button.custom_minimum_size = Vector2(0,76); mobile_start_button.add_theme_font_size_override("font_size",24); mobile_start_button.pressed.connect(_start_battle); menu_panel.add_child(mobile_start_button)
-        rematch_button = Button.new(); rematch_button.text = "REMATCH"; rematch_button.position = Vector2(175,940); rematch_button.size = Vector2(170,60); rematch_button.visible = false; rematch_button.pressed.connect(_start_battle); add_child(rematch_button)
-        menu_button = Button.new(); menu_button.text = "ROSTER"; menu_button.position = Vector2(375,940); menu_button.size = Vector2(170,60); menu_button.visible = false; menu_button.pressed.connect(_show_menu); add_child(menu_button)
-        pause_button = Button.new(); pause_button.text = "II"; pause_button.position = Vector2(530,118); pause_button.size = Vector2(54,48); pause_button.visible = false; pause_button.pressed.connect(_toggle_pause); add_child(pause_button)
-        speed_button = Button.new(); speed_button.text = "1x"; speed_button.position = Vector2(590,118); speed_button.size = Vector2(54,48); speed_button.visible = false; speed_button.pressed.connect(_cycle_speed); add_child(speed_button)
-        sound_button = Button.new(); sound_button.text = "SFX"; sound_button.position = Vector2(650,118); sound_button.size = Vector2(54,48); sound_button.pressed.connect(_toggle_sound); add_child(sound_button)
-        _sync_menu_text()
-        return
     var l1 := Label.new(); l1.text = "LEFT FIGHTER"; l1.add_theme_font_size_override("font_size",16); menu_panel.add_child(l1)
     left_pick = OptionButton.new(); left_pick.custom_minimum_size = Vector2(0,54); menu_panel.add_child(left_pick)
     var l2 := Label.new(); l2.text = "RIGHT FIGHTER"; l2.add_theme_font_size_override("font_size",16); menu_panel.add_child(l2)
@@ -594,6 +592,8 @@ func _randomize_matchup() -> void:
     if right_pick != null:
         right_pick.select(selected_right)
     _sync_menu_text(); _play("start")
+    if mobile_build and state != "menu":
+        _start_battle()
 func _cycle_selection(step: int, is_left: bool) -> void:
     if is_left:
         selected_left = posmod(selected_left + step, roster.size())
@@ -605,6 +605,8 @@ func _cycle_selection(step: int, is_left: bool) -> void:
             selected_left = posmod(selected_left + 1, roster.size())
     _sync_menu_text()
     _play("start")
+    if mobile_build and state != "menu":
+        _start_battle()
 func _refresh_mobile_menu_text() -> void:
     if mobile_left_label != null:
         var a: Dictionary = roster[selected_left]
