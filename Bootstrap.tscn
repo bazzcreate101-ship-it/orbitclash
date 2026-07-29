@@ -16,6 +16,7 @@ offset_left = 48.0
 offset_top = 520.0
 offset_right = 672.0
 offset_bottom = 700.0
+mouse_filter = 2
 theme_override_font_sizes/font_size = 34
 text = "ORBIT CLASH
 LOADING ARENA..."
