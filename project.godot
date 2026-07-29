@@ -2,10 +2,10 @@
 config/name="Orbit Clash"
 config/description="Physics auto-battle arena with scaling fighter abilities"
 config/version="0.5.0"
-run/main_scene="res://Main.tscn"
+run/main_scene="res://Bootstrap.tscn"
 config/icon="res://icon.svg"
 config/features=PackedStringArray("4.2", "GL Compatibility")
-boot_splash/bg_color=Color(0.055, 0.06, 0.075, 1)
+boot_splash/bg_color=Color(0.956863, 0.94902, 0.937255, 1)
 
 [display]
 window/size/viewport_width=720
@@ -19,7 +19,7 @@ window/handheld/orientation=1
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 textures/vram_compression/import_etc2_astc=true
-environment/defaults/default_clear_color=Color(0.055, 0.06, 0.075, 1)
+environment/defaults/default_clear_color=Color(0.956863, 0.94902, 0.937255, 1)
 
 [audio]
 default_bus_layout="res://default_bus_layout.tres"
