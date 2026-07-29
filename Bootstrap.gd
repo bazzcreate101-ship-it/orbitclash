@@ -16,9 +16,10 @@ func _start_game() -> void:
     var game := packed_scene.instantiate()
     game.name = "MainRuntime"
     add_child(game)
-    fallback_bg.visible = false
-    fallback_label.visible = false
 
 func report_boot(message: String) -> void:
     if fallback_label.visible:
         fallback_label.text = "ORBIT CLASH\n" + message
+    if message.ends_with("complete"):
+        fallback_bg.visible = false
+        fallback_label.visible = false

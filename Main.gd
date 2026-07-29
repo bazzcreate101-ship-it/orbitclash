@@ -32,6 +32,7 @@ var title_label: Label
 var subtitle_label: Label
 var center_label: Label
 var footer_label: Label
+var ui_font: Font
 var menu_panel: VBoxContainer
 var mobile_left_label: Label
 var mobile_right_label: Label
@@ -555,6 +556,9 @@ func _make_ui() -> void:
     subtitle_label = Label.new(); subtitle_label.position = Vector2(0,79); subtitle_label.size = Vector2(W,28); subtitle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; subtitle_label.modulate = Color(0.72,0.74,0.82); subtitle_label.add_theme_font_size_override("font_size",16); add_child(subtitle_label)
     center_label = Label.new(); center_label.position = Vector2(58,500); center_label.size = Vector2(604,165); center_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; center_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER; center_label.add_theme_font_size_override("font_size",44); add_child(center_label)
     footer_label = Label.new(); footer_label.position = Vector2(20,1240); footer_label.size = Vector2(W-40,26); footer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER; footer_label.modulate = Color(0.70,0.73,0.80); footer_label.add_theme_font_size_override("font_size",14); add_child(footer_label)
+    ui_font = title_label.get_theme_font("font")
+    if ui_font == null:
+        ui_font = subtitle_label.get_theme_font("font")
     if mobile_build:
         mobile_left_label = Label.new(); mobile_left_label.position = Vector2(24,878); mobile_left_label.size = Vector2(672,26); mobile_left_label.add_theme_font_size_override("font_size",17); add_child(mobile_left_label)
         mobile_right_label = Label.new(); mobile_right_label.position = Vector2(24,906); mobile_right_label.size = Vector2(672,26); mobile_right_label.add_theme_font_size_override("font_size",17); add_child(mobile_right_label)
@@ -669,7 +673,7 @@ func _ability_ratio(f: Dictionary) -> float:
     return 0.0
 
 func _draw() -> void:
-    if ThemeDB.fallback_font == null:
+    if ui_font == null:
         return
     var off := Vector2.ZERO
     if shake > 0.0: off = Vector2(rng.randf_range(-shake,shake),rng.randf_range(-shake,shake))
@@ -681,7 +685,7 @@ func _draw() -> void:
     for s in shockwaves:
         var prog: float = 1.0-s.life/s.max; draw_arc(s.pos+off,8.0+prog*(72.0+42.0*s.strength),0,TAU,44,Color(s.color,(1.0-prog)*0.55),3.0)
     for p in sparks: draw_circle(p.pos+off,p.r,Color(p.color,clampf(p.life/p.max,0,1)))
-    for t in floating_texts: draw_string(ThemeDB.fallback_font,t.pos+off,t.text,HORIZONTAL_ALIGNMENT_CENTER,-1,18,Color(t.color,clampf(t.life/t.max,0,1)))
+    for t in floating_texts: draw_string(ui_font,t.pos+off,t.text,HORIZONTAL_ALIGNMENT_CENTER,-1,18,Color(t.color,clampf(t.life/t.max,0,1)))
     if flash > 0.0: draw_rect(Rect2(0,0,W,H),Color(1,1,1,flash),true)
 
 func _draw_background_grid() -> void:
@@ -692,7 +696,7 @@ func _draw_background_grid() -> void:
 func _draw_top_match_ui() -> void:
     if fighters.size()<2:return
     var a:Dictionary=fighters[0];var b:Dictionary=fighters[1]
-    draw_string(ThemeDB.fallback_font,Vector2(34,142),a.name,HORIZONTAL_ALIGNMENT_LEFT,290,18,Color("2b1f18")); draw_string(ThemeDB.fallback_font,Vector2(396,142),b.name,HORIZONTAL_ALIGNMENT_RIGHT,290,18,Color("2b1f18")); draw_string(ThemeDB.fallback_font,Vector2(325,143),"VS",HORIZONTAL_ALIGNMENT_CENTER,70,17,Color("6d6258"))
+    draw_string(ui_font,Vector2(34,142),a.name,HORIZONTAL_ALIGNMENT_LEFT,290,18,Color("2b1f18")); draw_string(ui_font,Vector2(396,142),b.name,HORIZONTAL_ALIGNMENT_RIGHT,290,18,Color("2b1f18")); draw_string(ui_font,Vector2(325,143),"VS",HORIZONTAL_ALIGNMENT_CENTER,70,17,Color("6d6258"))
     _draw_hp_meter(Vector2(34,154),286,a.hp/a.max_hp,a.body_color,false); _draw_hp_meter(Vector2(400,154),286,b.hp/b.max_hp,b.body_color,true)
 func _draw_hp_meter(pos:Vector2,width:float,ratio:float,color:Color,reverse:bool)->void:
     draw_rect(Rect2(pos,Vector2(width,12)),Color("e2ddd4"),true);var w:=width*clampf(ratio,0,1);var x:=pos.x+width-w if reverse else pos.x;draw_rect(Rect2(Vector2(x,pos.y),Vector2(w,12)),color,true);draw_rect(Rect2(pos,Vector2(width,12)),Color("3b322a"),false,1.0)
@@ -724,11 +728,11 @@ func _draw_fighter(f:Dictionary,off:Vector2)->void:
     _draw_weapon(f.pos+off,f.angle,l,f.weapon_width,f.weapon_color,false)
     if f.id=="monkeyking":
         for ca in f.clone_angles:_draw_weapon(f.pos+off,ca,l*0.86,maxf(7.0,f.weapon_width-2.0),Color(f.weapon_color,0.66),true)
-    draw_circle(f.pos+off,RADIUS+6.0,Color("06080d"));draw_circle(f.pos+off,RADIUS,f.body_color);draw_circle(f.pos+off,RADIUS-8.0,Color(f.body_color.lightened(0.08),0.72));draw_string(ThemeDB.fallback_font,f.pos+off+Vector2(-18,6),str(int(ceil(f.hp))),HORIZONTAL_ALIGNMENT_CENTER,36,15,Color("11141b"))
+    draw_circle(f.pos+off,RADIUS+6.0,Color("06080d"));draw_circle(f.pos+off,RADIUS,f.body_color);draw_circle(f.pos+off,RADIUS-8.0,Color(f.body_color.lightened(0.08),0.72));draw_string(ui_font,f.pos+off+Vector2(-18,6),str(int(ceil(f.hp))),HORIZONTAL_ALIGNMENT_CENTER,36,15,Color("11141b"))
 func _draw_weapon(origin:Vector2,angle:float,length:float,width:float,color:Color,ghost:bool)->void:
     var dir:=Vector2.RIGHT.rotated(angle);var tip:=origin+dir*length;var handle_end:=origin+dir*minf(29.0,length*0.32);var alpha:=0.72 if ghost else 1.0;draw_line(origin,tip,Color(0.02,0.025,0.04,alpha),width+6.0,true);draw_line(origin,handle_end,Color("6e7480",alpha),width+1.0,true);draw_line(handle_end,tip,Color(color,alpha),width,true);draw_circle(tip,width*0.72,Color(color,alpha))
 func _draw_bottom_stats()->void:
     if fighters.size()<2:return
     _draw_stat_card(Rect2(32,1060,316,145),fighters[0],false);_draw_stat_card(Rect2(372,1060,316,145),fighters[1],true)
 func _draw_stat_card(rect:Rect2,f:Dictionary,right_align:bool)->void:
-    draw_rect(rect,Color("eee9e2"),true);draw_rect(rect,Color("2d251d"),false,1.0);var x:=rect.position.x+14;var align:=HORIZONTAL_ALIGNMENT_RIGHT if right_align else HORIZONTAL_ALIGNMENT_LEFT;draw_string(ThemeDB.fallback_font,Vector2(x,rect.position.y+27),f.name,align,rect.size.x-28,18,f.body_color);draw_string(ThemeDB.fallback_font,Vector2(x,rect.position.y+53),_fighter_stat_line(f),align,rect.size.x-28,15,Color("2b251f"));draw_string(ThemeDB.fallback_font,Vector2(x,rect.position.y+80),f.skill,align,rect.size.x-28,14,Color("5f554b"));var bar:=Rect2(rect.position+Vector2(14,96),Vector2(rect.size.x-28,13));draw_rect(bar,Color("d8d0c5"),true);draw_rect(Rect2(bar.position,Vector2(bar.size.x*_ability_ratio(f),bar.size.y)),f.body_color,true);draw_string(ThemeDB.fallback_font,Vector2(x,rect.position.y+132),"HP %d / %d"%[int(ceil(f.hp)),int(f.max_hp)],align,rect.size.x-28,14,Color("3b322a"))
+    draw_rect(rect,Color("eee9e2"),true);draw_rect(rect,Color("2d251d"),false,1.0);var x:=rect.position.x+14;var align:=HORIZONTAL_ALIGNMENT_RIGHT if right_align else HORIZONTAL_ALIGNMENT_LEFT;draw_string(ui_font,Vector2(x,rect.position.y+27),f.name,align,rect.size.x-28,18,f.body_color);draw_string(ui_font,Vector2(x,rect.position.y+53),_fighter_stat_line(f),align,rect.size.x-28,15,Color("2b251f"));draw_string(ui_font,Vector2(x,rect.position.y+80),f.skill,align,rect.size.x-28,14,Color("5f554b"));var bar:=Rect2(rect.position+Vector2(14,96),Vector2(rect.size.x-28,13));draw_rect(bar,Color("d8d0c5"),true);draw_rect(Rect2(bar.position,Vector2(bar.size.x*_ability_ratio(f),bar.size.y)),f.body_color,true);draw_string(ui_font,Vector2(x,rect.position.y+132),"HP %d / %d"%[int(ceil(f.hp)),int(f.max_hp)],align,rect.size.x-28,14,Color("3b322a"))
