@@ -134,12 +134,18 @@ func _show_menu() -> void:
     trails = [[], []]
     center_label.text = ""
     footer_label.text = "Pick a matchup • each fighter bends the arena rules"
-    menu_panel.visible = true
-    rematch_button.visible = false
-    menu_button.visible = false
-    pause_button.visible = false
-    speed_button.visible = false
-    sound_button.visible = true
+    if menu_panel != null:
+        menu_panel.visible = true
+    if rematch_button != null:
+        rematch_button.visible = false
+    if menu_button != null:
+        menu_button.visible = false
+    if pause_button != null:
+        pause_button.visible = false
+    if speed_button != null:
+        speed_button.visible = false
+    if sound_button != null:
+        sound_button.visible = true
     subtitle_label.text = "PHYSICS AUTO-BATTLE"
     _sync_menu_text()
 
@@ -549,6 +555,11 @@ func _make_ui() -> void:
         matchup_label = Label.new(); matchup_label.custom_minimum_size = Vector2(0,238); matchup_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART; matchup_label.add_theme_font_size_override("font_size",16); menu_panel.add_child(matchup_label)
         mobile_random_button = Button.new(); mobile_random_button.text = "RANDOM MATCHUP"; mobile_random_button.custom_minimum_size = Vector2(0,60); mobile_random_button.pressed.connect(_randomize_matchup); menu_panel.add_child(mobile_random_button)
         mobile_start_button = Button.new(); mobile_start_button.text = "START BATTLE"; mobile_start_button.custom_minimum_size = Vector2(0,76); mobile_start_button.add_theme_font_size_override("font_size",24); mobile_start_button.pressed.connect(_start_battle); menu_panel.add_child(mobile_start_button)
+        rematch_button = Button.new(); rematch_button.text = "REMATCH"; rematch_button.position = Vector2(175,940); rematch_button.size = Vector2(170,60); rematch_button.visible = false; rematch_button.pressed.connect(_start_battle); add_child(rematch_button)
+        menu_button = Button.new(); menu_button.text = "ROSTER"; menu_button.position = Vector2(375,940); menu_button.size = Vector2(170,60); menu_button.visible = false; menu_button.pressed.connect(_show_menu); add_child(menu_button)
+        pause_button = Button.new(); pause_button.text = "II"; pause_button.position = Vector2(530,118); pause_button.size = Vector2(54,48); pause_button.visible = false; pause_button.pressed.connect(_toggle_pause); add_child(pause_button)
+        speed_button = Button.new(); speed_button.text = "1x"; speed_button.position = Vector2(590,118); speed_button.size = Vector2(54,48); speed_button.visible = false; speed_button.pressed.connect(_cycle_speed); add_child(speed_button)
+        sound_button = Button.new(); sound_button.text = "SFX"; sound_button.position = Vector2(650,118); sound_button.size = Vector2(54,48); sound_button.pressed.connect(_toggle_sound); add_child(sound_button)
         _sync_menu_text()
         return
     var l1 := Label.new(); l1.text = "LEFT FIGHTER"; l1.add_theme_font_size_override("font_size",16); menu_panel.add_child(l1)
