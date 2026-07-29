@@ -1,37 +1,43 @@
 extends Node2D
 
 @onready var fallback_label: Label = $FallbackLabel
-var load_started := false
 var game_scene := "res://Main.tscn"
+var step := 0
+var packed_scene: PackedScene
 
 func _ready() -> void:
-    fallback_label.text = "ORBIT CLASH\nBOOTING..."
-    ResourceLoader.load_threaded_request(game_scene)
-    load_started = true
+    fallback_label.text = "ORBIT CLASH\nDIAGNOSTIC BOOT\nTAP SCREEN"
 
-func _process(_delta: float) -> void:
-    if not load_started:
+func _input(event: InputEvent) -> void:
+    if event is InputEventScreenTouch and event.pressed:
+        _next_step()
+    elif event is InputEventMouseButton and event.pressed:
+        _next_step()
+
+func _next_step() -> void:
+    step += 1
+    if step == 1:
+        fallback_label.text = "STEP 1\nABOUT TO SYNC LOAD MAIN\nTAP AGAIN"
         return
-    var progress := []
-    var status := ResourceLoader.load_threaded_get_status(game_scene, progress)
-    match status:
-        ResourceLoader.THREAD_LOAD_IN_PROGRESS:
-            var pct := 0.0
-            if progress.size() > 0:
-                pct = progress[0] * 100.0
-            fallback_label.text = "ORBIT CLASH\nLOADING ARENA...\n%0.0f%%" % pct
-        ResourceLoader.THREAD_LOAD_LOADED:
-            load_started = false
-            var packed := ResourceLoader.load_threaded_get(game_scene)
-            if packed == null:
-                fallback_label.text = "ORBIT CLASH\nFAILED TO LOAD MAIN SCENE"
-                return
-            fallback_label.text = "ORBIT CLASH\nSTARTING..."
-            var game := packed.instantiate()
-            add_child(game)
-        ResourceLoader.THREAD_LOAD_FAILED:
-            load_started = false
-            fallback_label.text = "ORBIT CLASH\nFAILED TO LOAD MAIN SCENE"
+    if step == 2:
+        fallback_label.text = "STEP 2\nSYNC LOADING MAIN..."
+        packed_scene = load(game_scene)
+        fallback_label.text = "STEP 2 DONE\nLOAD OK: %s\nTAP AGAIN" % str(packed_scene != null)
+        return
+    if step == 3:
+        fallback_label.text = "STEP 3\nABOUT TO INSTANTIATE\nTAP AGAIN"
+        return
+    if step == 4:
+        fallback_label.text = "STEP 4\nINSTANTIATING..."
+        if packed_scene == null:
+            fallback_label.text = "STEP 4 FAILED\nPACKED SCENE NULL"
+            return
+        var game := packed_scene.instantiate()
+        fallback_label.text = "STEP 4 DONE\nINSTANCE OK\nTAP AGAIN"
+        game.name = "MainRuntime"
+        add_child(game)
+        return
+    fallback_label.text = "STEP %d\nBOOTSTRAP STILL ALIVE" % step
 
 func report_boot(message: String) -> void:
     fallback_label.text = "ORBIT CLASH\n" + message
