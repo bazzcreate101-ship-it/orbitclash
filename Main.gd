@@ -74,6 +74,9 @@ func _boot_report(message: String) -> void:
     if p != null and p.has_method("report_boot"):
         p.call("report_boot", message)
 
+func _enter_tree() -> void:
+    _boot_report("MAIN ENTER TREE")
+
 func _ready() -> void:
     _boot_report("MAIN READY: start")
     rng.randomize()
