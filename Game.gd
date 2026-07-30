@@ -63,6 +63,8 @@ func _label(text: String, pos: Vector2, size: Vector2, font_size: int, align) ->
     l.horizontal_alignment = align
     l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
     l.add_theme_font_size_override("font_size", font_size)
+    l.add_theme_color_override("font_color", Color("151515"))
+    l.add_theme_color_override("font_shadow_color", Color(1, 1, 1, 0.55))
     add_child(l)
     return l
 
@@ -71,6 +73,9 @@ func _button(text: String, pos: Vector2, size: Vector2, target: Callable) -> voi
     b.text = text
     b.position = pos
     b.size = size
+    b.add_theme_color_override("font_color", Color("151515"))
+    b.add_theme_color_override("font_pressed_color", Color("000000"))
+    b.add_theme_font_size_override("font_size", 18)
     b.pressed.connect(target)
     add_child(b)
 
@@ -84,8 +89,8 @@ func _start_battle() -> void:
     var a: Dictionary = roster[left_idx]
     var b: Dictionary = roster[right_idx]
     fighters = [
-        _fighter(a, Vector2(190, 420), Vector2(210, 230) * float(a.speed), 0),
-        _fighter(b, Vector2(530, 720), Vector2(-220, -210) * float(b.speed), 1)
+        _fighter(a, Vector2(190, 420), Vector2(210, 230) * float(a["speed"]), 0),
+        _fighter(b, Vector2(530, 720), Vector2(-220, -210) * float(b["speed"]), 1)
     ]
     projectiles.clear()
     elapsed = 0.0
@@ -94,14 +99,14 @@ func _start_battle() -> void:
 
 func _fighter(data: Dictionary, pos: Vector2, vel: Vector2, side: int) -> Dictionary:
     return {
-        "name": data.name,
-        "skill": data.skill,
-        "color": data.color,
-        "power": float(data.power),
+        "name": str(data["name"]),
+        "skill": str(data["skill"]),
+        "color": data["color"],
+        "power": float(data["power"]),
         "pos": pos,
         "vel": vel.rotated(rng.randf_range(-0.25, 0.25)),
         "angle": 0.0 if side == 0 else PI,
-        "spin": (3.2 if side == 0 else -3.2) * float(data.speed),
+        "spin": (3.2 if side == 0 else -3.2) * float(data["speed"]),
         "hp": 100.0,
         "meter": 0.0,
         "side": side
@@ -115,70 +120,74 @@ func _process(delta: float) -> void:
         _resolve_hit(fighters[0], fighters[1])
         _resolve_hit(fighters[1], fighters[0])
         _update_projectiles(delta)
-        if fighters[0].hp <= 0.0 or fighters[1].hp <= 0.0:
+        if float(fighters[0]["hp"]) <= 0.0 or float(fighters[1]["hp"]) <= 0.0:
             state = "result"
-            var winner: Dictionary = fighters[0] if fighters[0].hp > fighters[1].hp else fighters[1]
-            status_label.text = "%s WINS - tap REMATCH" % winner.name
+            var winner: Dictionary = fighters[0] if float(fighters[0]["hp"]) > float(fighters[1]["hp"]) else fighters[1]
+            status_label.text = "%s WINS - tap REMATCH" % str(winner["name"])
         _sync_text()
     queue_redraw()
 
 func _update_fighter(f: Dictionary, delta: float, enemy: Dictionary) -> void:
-    f.angle += f.spin * delta
-    f.pos += f.vel * delta
-    if f.pos.x < ARENA.position.x + R or f.pos.x > ARENA.end.x - R:
-        f.vel.x *= -1.0
-        f.pos.x = clampf(f.pos.x, ARENA.position.x + R, ARENA.end.x - R)
-    if f.pos.y < ARENA.position.y + R or f.pos.y > ARENA.end.y - R:
-        f.vel.y *= -1.0
-        f.pos.y = clampf(f.pos.y, ARENA.position.y + R, ARENA.end.y - R)
-    f.meter = minf(1.0, f.meter + delta * 0.12)
-    if f.meter >= 1.0:
-        f.meter = 0.0
+    f["angle"] = float(f["angle"]) + float(f["spin"]) * delta
+    f["pos"] = f["pos"] + f["vel"] * delta
+    var pos: Vector2 = f["pos"]
+    var vel: Vector2 = f["vel"]
+    if pos.x < ARENA.position.x + R or pos.x > ARENA.end.x - R:
+        vel.x *= -1.0
+        pos.x = clampf(pos.x, ARENA.position.x + R, ARENA.end.x - R)
+    if pos.y < ARENA.position.y + R or pos.y > ARENA.end.y - R:
+        vel.y *= -1.0
+        pos.y = clampf(pos.y, ARENA.position.y + R, ARENA.end.y - R)
+    f["pos"] = pos
+    f["vel"] = vel
+    f["meter"] = minf(1.0, float(f["meter"]) + delta * 0.12)
+    if float(f["meter"]) >= 1.0:
+        f["meter"] = 0.0
         _cast_skill(f, enemy)
 
 func _resolve_hit(a: Dictionary, b: Dictionary) -> void:
-    var tip := a.pos + Vector2.RIGHT.rotated(a.angle) * 86.0
-    if tip.distance_to(b.pos) <= R + 12.0:
-        var dmg := 2.8 + 4.2 * float(a.power)
-        if a.skill == "Crit Dash" and rng.randf() < 0.28:
+    var tip: Vector2 = a["pos"] + Vector2.RIGHT.rotated(float(a["angle"])) * 86.0
+    if tip.distance_to(b["pos"]) <= R + 12.0:
+        var dmg := 2.8 + 4.2 * float(a["power"])
+        if str(a["skill"]) == "Crit Dash" and rng.randf() < 0.28:
             dmg *= 2.0
-            a.vel *= 1.12
-        if b.skill == "Counter":
-            a.hp -= dmg * 0.24
-        b.hp = maxf(0.0, b.hp - dmg)
-        b.vel += (b.pos - a.pos).normalized() * 32.0
+            a["vel"] = a["vel"] * 1.12
+        if str(b["skill"]) == "Counter":
+            a["hp"] = float(a["hp"]) - dmg * 0.24
+        b["hp"] = maxf(0.0, float(b["hp"]) - dmg)
+        b["vel"] = b["vel"] + (b["pos"] - a["pos"]).normalized() * 32.0
 
 func _cast_skill(f: Dictionary, enemy: Dictionary) -> void:
-    match f.skill:
+    match str(f["skill"]):
         "Freeze":
-            enemy.vel *= 0.76
+            enemy["vel"] = enemy["vel"] * 0.76
         "Lance Volley", "Verdict", "Gates", "Spell Bloom":
-            projectiles.append({"pos":f.pos, "vel":(enemy.pos - f.pos).normalized() * 360.0, "owner":f.side, "color":f.color, "damage":8.0 * float(f.power), "life":1.2})
+            projectiles.append({"pos":f["pos"], "vel":(enemy["pos"] - f["pos"]).normalized() * 360.0, "owner":f["side"], "color":f["color"], "damage":8.0 * float(f["power"]), "life":1.2})
         "Echo Staff":
-            f.spin *= 1.08
+            f["spin"] = float(f["spin"]) * 1.08
         "Heat Burst", "Perfect Cut":
-            enemy.hp = maxf(0.0, enemy.hp - 7.0 * float(f.power))
+            enemy["hp"] = maxf(0.0, float(enemy["hp"]) - 7.0 * float(f["power"]))
 
 func _update_projectiles(delta: float) -> void:
     for i in range(projectiles.size() - 1, -1, -1):
         var p: Dictionary = projectiles[i]
-        p.life -= delta
-        p.pos += p.vel * delta
-        var target: Dictionary = fighters[1 - int(p.owner)]
-        if p.pos.distance_to(target.pos) <= R + 8.0:
-            target.hp = maxf(0.0, target.hp - float(p.damage))
+        p["life"] = float(p["life"]) - delta
+        p["pos"] = p["pos"] + p["vel"] * delta
+        var target: Dictionary = fighters[1 - int(p["owner"])]
+        if p["pos"].distance_to(target["pos"]) <= R + 8.0:
+            target["hp"] = maxf(0.0, float(target["hp"]) - float(p["damage"]))
             projectiles.remove_at(i)
             continue
-        if p.life <= 0.0:
+        if float(p["life"]) <= 0.0:
             projectiles.remove_at(i)
 
 func _sync_text() -> void:
     if fighters.size() != 2:
         return
-    left_label.text = "%s\n%s" % [fighters[0].name, fighters[0].skill]
-    right_label.text = "%s\n%s" % [fighters[1].name, fighters[1].skill]
-    left_hp_label.text = "HP %d" % int(ceil(fighters[0].hp))
-    right_hp_label.text = "HP %d" % int(ceil(fighters[1].hp))
+    left_label.text = "%s\n%s" % [str(fighters[0]["name"]), str(fighters[0]["skill"])]
+    right_label.text = "%s\n%s" % [str(fighters[1]["name"]), str(fighters[1]["skill"])]
+    left_hp_label.text = "HP %d" % int(ceil(float(fighters[0]["hp"])))
+    right_hp_label.text = "HP %d" % int(ceil(float(fighters[1]["hp"])))
     if state == "battle":
         status_label.text = "WATCHING MATCHUP %.1fs" % elapsed
 
@@ -193,14 +202,15 @@ func _draw() -> void:
         _draw_fighter(fighters[0])
         _draw_fighter(fighters[1])
     for p in projectiles:
-        draw_circle(p.pos, 9.0, p.color)
+        draw_circle(p["pos"], 9.0, p["color"])
 
 func _draw_fighter(f: Dictionary) -> void:
-    var tip := f.pos + Vector2.RIGHT.rotated(f.angle) * 86.0
-    draw_line(f.pos, tip, Color("111111"), 13.0, true)
-    draw_line(f.pos, tip, Color(f.color), 8.0, true)
-    draw_circle(f.pos, R + 5.0, Color("111111"))
-    draw_circle(f.pos, R, f.color)
+    var pos: Vector2 = f["pos"]
+    var tip := pos + Vector2.RIGHT.rotated(float(f["angle"])) * 86.0
+    draw_line(pos, tip, Color("111111"), 13.0, true)
+    draw_line(pos, tip, f["color"], 8.0, true)
+    draw_circle(pos, R + 5.0, Color("111111"))
+    draw_circle(pos, R, f["color"])
 
 func _left_prev() -> void:
     left_idx = posmod(left_idx - 1, roster.size())
