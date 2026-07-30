@@ -41,7 +41,7 @@ func _ready() -> void:
     queue_redraw()
 
 func _make_ui() -> void:
-    title_label = _label("ORBIT CLASH", Vector2(0, 34), Vector2(W, 48), 34, HORIZONTAL_ALIGNMENT_CENTER)
+    title_label = _label("ORBIT CLASH DIRECT", Vector2(0, 34), Vector2(W, 48), 34, HORIZONTAL_ALIGNMENT_CENTER)
     status_label = _label("AUTO BATTLE", Vector2(0, 82), Vector2(W, 32), 18, HORIZONTAL_ALIGNMENT_CENTER)
     left_label = _label("", Vector2(30, 132), Vector2(310, 56), 18, HORIZONTAL_ALIGNMENT_LEFT)
     right_label = _label("", Vector2(380, 132), Vector2(310, 56), 18, HORIZONTAL_ALIGNMENT_RIGHT)
