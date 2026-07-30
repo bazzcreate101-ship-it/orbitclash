@@ -68,34 +68,44 @@ var roster := [
 ]
 var selected_left := 0
 var selected_right := 1
+var startup_stage := "constructed"
 
 func _boot_report(message: String) -> void:
+    startup_stage = message
     var p := get_parent()
     if p != null and p.has_method("report_boot"):
         p.call("report_boot", message)
 
 func _enter_tree() -> void:
+    startup_stage = "ENTER TREE"
     _boot_report("MAIN ENTER TREE")
 
 func _ready() -> void:
+    startup_stage = "READY start"
     _boot_report("MAIN READY: start")
     rng.randomize()
     mobile_build = OS.has_feature("android") or OS.has_feature("mobile")
+    startup_stage = "READY audio"
     _boot_report("MAIN READY: audio")
     _make_audio()
+    startup_stage = "READY ui"
     _boot_report("MAIN READY: ui")
     _make_ui()
     if mobile_build:
+        startup_stage = "READY mobile roster"
         _boot_report("MAIN READY: mobile roster")
         selected_left = rng.randi_range(0, roster.size() - 1)
         selected_right = rng.randi_range(0, roster.size() - 1)
         while selected_right == selected_left:
             selected_right = rng.randi_range(0, roster.size() - 1)
+        startup_stage = "READY start battle"
         _boot_report("MAIN READY: start battle")
         _start_battle()
     else:
+        startup_stage = "READY menu"
         _boot_report("MAIN READY: menu")
         _show_menu()
+    startup_stage = "READY complete"
     _boot_report("MAIN READY: complete")
     queue_redraw()
 
