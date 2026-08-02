@@ -28,10 +28,16 @@ var right_idx := 8
 var fighters := []
 var sparks := []
 var shots := []
+var trails := []
+var damage_pops := []
 var state := "battle"
 var elapsed := 0.0
 var hit_cooldown := 0.0
 var speed_scale := 1.0
+var slowmo_timer := 0.0
+var shake_timer := 0.0
+var shake_power := 0.0
+var audio_players := {}
 
 var title_label: Label
 var subtitle_label: Label
@@ -48,9 +54,27 @@ var watermark_label: Label
 
 func _ready() -> void:
 	rng.randomize()
+	_setup_audio()
 	_make_ui()
 	_start_battle()
 	queue_redraw()
+
+func _setup_audio() -> void:
+	for key in ["start", "hit", "wall", "shoot", "freeze", "gate", "crit", "ability", "win"]:
+		var player := AudioStreamPlayer.new()
+		player.stream = load("res://audio/%s.wav" % key)
+		player.volume_db = -8.0 if key != "wall" else -16.0
+		add_child(player)
+		audio_players[key] = player
+
+func _play_sfx(key: String, volume_shift := 0.0) -> void:
+	if not audio_players.has(key):
+		return
+	var player: AudioStreamPlayer = audio_players[key]
+	player.volume_db = (-8.0 if key != "wall" else -16.0) + volume_shift
+	player.pitch_scale = rng.randf_range(0.88, 1.12)
+	player.stop()
+	player.play()
 
 func _make_ui() -> void:
 	title_label = _label("Orbit Clash Sim", Vector2(0, 34), Vector2(W, 48), 36, HORIZONTAL_ALIGNMENT_CENTER)
@@ -63,7 +87,7 @@ func _make_ui() -> void:
 	right_skill = _label("", Vector2(368, 920), Vector2(316, 38), 17, HORIZONTAL_ALIGNMENT_RIGHT)
 	left_stat = _label("", Vector2(36, 972), Vector2(316, 70), 24, HORIZONTAL_ALIGNMENT_LEFT)
 	right_stat = _label("", Vector2(368, 972), Vector2(316, 70), 24, HORIZONTAL_ALIGNMENT_RIGHT)
-	watermark_label = _label("@ballthingsim inspired", Vector2(0, 858), Vector2(W, 34), 18, HORIZONTAL_ALIGNMENT_CENTER)
+	watermark_label = _label("@orbitclashsim", Vector2(0, 858), Vector2(W, 34), 18, HORIZONTAL_ALIGNMENT_CENTER)
 	watermark_label.add_theme_color_override("font_color", Color(0, 0, 0, 0.18))
 	footer_label = _label("tap RANDOM for a new question: who wins this matchup?", Vector2(28, 1138), Vector2(664, 36), 16, HORIZONTAL_ALIGNMENT_CENTER)
 	_button("< LEFT", Vector2(36, 1060), Vector2(140, 58), _left_prev)
@@ -111,11 +135,19 @@ func _start_battle() -> void:
 		_make_fighter(left_data, Vector2(176, 555), Vector2(165, -125), 0),
 		_make_fighter(right_data, Vector2(544, 555), Vector2(-165, 125), 1)
 	]
+	for p in damage_pops:
+		if p.has("label") and is_instance_valid(p["label"]):
+			p["label"].queue_free()
 	sparks.clear()
 	shots.clear()
+	trails.clear()
+	damage_pops.clear()
 	elapsed = 0.0
 	hit_cooldown = 0.0
+	slowmo_timer = 0.0
+	shake_timer = 0.0
 	state = "battle"
+	_play_sfx("start", -2.0)
 	_sync_ui()
 
 func _make_fighter(data: Dictionary, pos: Vector2, base_vel: Vector2, side: int) -> Dictionary:
@@ -141,7 +173,17 @@ func _make_fighter(data: Dictionary, pos: Vector2, base_vel: Vector2, side: int)
 	}
 
 func _process(delta: float) -> void:
+	if slowmo_timer > 0.0:
+		slowmo_timer -= delta
+		speed_scale = 0.38
+	else:
+		speed_scale = 1.0
 	var dt := delta * speed_scale
+	if shake_timer > 0.0:
+		shake_timer -= delta
+		position = Vector2(rng.randf_range(-shake_power, shake_power), rng.randf_range(-shake_power, shake_power))
+	else:
+		position = Vector2.ZERO
 	elapsed += dt
 	if hit_cooldown > 0.0:
 		hit_cooldown -= dt
@@ -152,8 +194,14 @@ func _process(delta: float) -> void:
 		_resolve_weapons(fighters[1], fighters[0])
 		_update_shots(dt)
 		_update_sparks(dt)
+		_update_trails(dt)
+		_update_damage_pops(dt)
 		if float(fighters[0]["hp"]) <= 0.0 or float(fighters[1]["hp"]) <= 0.0 or elapsed > 42.0:
 			_finish_battle()
+	else:
+		_update_sparks(dt)
+		_update_trails(dt)
+		_update_damage_pops(dt)
 	_sync_ui()
 	queue_redraw()
 
@@ -165,9 +213,11 @@ func _update_fighter(f: Dictionary, dt: float, enemy: Dictionary) -> void:
 	if pos.x < ARENA.position.x + BALL_R or pos.x > ARENA.end.x - BALL_R:
 		vel.x *= -1.0
 		pos.x = clampf(pos.x, ARENA.position.x + BALL_R, ARENA.end.x - BALL_R)
+		_play_sfx("wall")
 	if pos.y < ARENA.position.y + BALL_R or pos.y > ARENA.end.y - BALL_R:
 		vel.y *= -1.0
 		pos.y = clampf(pos.y, ARENA.position.y + BALL_R, ARENA.end.y - BALL_R)
+		_play_sfx("wall")
 	var to_enemy: Vector2 = (enemy["pos"] - pos)
 	if to_enemy.length() > 1.0:
 		vel += to_enemy.normalized() * 5.5 * dt
@@ -178,6 +228,10 @@ func _update_fighter(f: Dictionary, dt: float, enemy: Dictionary) -> void:
 	if float(f["meter"]) >= 1.0:
 		f["meter"] = 0.0
 		_cast_signature(f, enemy)
+	_add_trail(f)
+
+func _add_trail(f: Dictionary) -> void:
+	trails.append({"pos": f["pos"], "angle": float(f["angle"]), "weapon": str(f["weapon"]), "color": f["color"], "life": 0.18})
 
 func _weapon_tip(f: Dictionary) -> Vector2:
 	return f["pos"] + Vector2.RIGHT.rotated(float(f["angle"])) * _weapon_reach(f)
@@ -206,41 +260,62 @@ func _apply_damage(attacker: Dictionary, target: Dictionary, mult: float, point:
 	var damage := float(attacker["damage"]) * mult * rng.randf_range(0.78, 1.28)
 	var ad: Dictionary = attacker["data"]
 	var td: Dictionary = target["data"]
+	var crit_hit := false
 	if ad.has("crit") and rng.randf() < float(ad["crit"]):
 		damage *= 2.6
 		attacker["vel"] = attacker["vel"] * 1.18
+		crit_hit = true
 	if ad.has("true_cut") and rng.randf() < float(ad["true_cut"]):
 		damage += 9.0
+		crit_hit = true
 	if ad.has("pierce") and rng.randf() < float(ad["pierce"]):
 		damage *= 1.65
+		crit_hit = true
 	if td.has("counter") and rng.randf() < float(td["counter"]):
 		attacker["hp"] = maxf(0.0, float(attacker["hp"]) - damage * 0.48)
 		_spawn_spark(attacker["pos"], Color("6f9dc1"), 10)
+		_spawn_damage_pop(attacker["pos"] + Vector2(0, -46), damage * 0.48, Color("6f9dc1"), "COUNTER")
+		_play_sfx("crit", -2.0)
 	if td.has("karma"):
 		damage *= rng.randf_range(0.55, 1.55)
 	target["hp"] = maxf(0.0, float(target["hp"]) - damage)
 	target["vel"] = target["vel"] + (target["pos"] - attacker["pos"]).normalized() * (32.0 + damage * 2.0)
-	_spawn_spark(point, attacker["color"], 8)
+	_spawn_spark(point, attacker["color"], 8 if not crit_hit else 18)
+	_spawn_damage_pop(point + Vector2(0, -28), damage, attacker["color"], "CRIT" if crit_hit else "")
+	_play_sfx("crit" if crit_hit else "hit", 1.5 if crit_hit else -1.0)
+	if damage >= 8.0:
+		slowmo_timer = 0.08
+		shake_timer = 0.16
+		shake_power = clampf(damage * 0.45, 3.0, 10.0)
 
 func _cast_signature(f: Dictionary, enemy: Dictionary) -> void:
 	var data: Dictionary = f["data"]
 	if data.has("freeze"):
 		enemy["vel"] = enemy["vel"] * float(data["freeze"])
 		_spawn_spark(enemy["pos"], Color("9ceeff"), 14)
+		_spawn_damage_pop(enemy["pos"] + Vector2(0, -58), 0.0, Color("9ceeff"), "FREEZE")
+		_play_sfx("freeze")
 	if data.has("ammo"):
 		for i in range(6):
 			_spawn_shot(f, enemy, i * 0.22 - 0.55, 3.6)
+		_play_sfx("shoot")
 	if data.has("orb"):
 		for i in range(3):
 			_spawn_shot(f, enemy, i * 0.42 - 0.42, 4.8)
+		_play_sfx("ability")
 	if data.has("gates"):
 		for i in range(2):
 			_spawn_shot(f, enemy, -0.35 + i * 0.7, 5.5)
+		_spawn_spark(f["pos"], Color("fff27e"), 18)
+		_play_sfx("gate")
 	if data.has("clone"):
 		_apply_damage(f, enemy, 0.65, enemy["pos"])
 		_spawn_spark(f["pos"] + Vector2(rng.randf_range(-70, 70), rng.randf_range(-70, 70)), f["color"], 12)
+		_play_sfx("ability", -2.0)
 	if data.has("karma"):
 		f["hp"] = minf(float(f["max_hp"]), float(f["hp"]) + 8.0)
+		_spawn_damage_pop(f["pos"] + Vector2(0, -58), 8.0, Color("ffffff"), "HEAL")
+		_play_sfx("ability", -4.0)
 
 func _spawn_shot(f: Dictionary, enemy: Dictionary, spread: float, damage: float) -> void:
 	var dir: Vector2 = (enemy["pos"] - f["pos"]).normalized().rotated(spread)
@@ -271,6 +346,43 @@ func _update_sparks(dt: float) -> void:
 		if float(sp["life"]) <= 0.0:
 			sparks.remove_at(i)
 
+func _spawn_damage_pop(pos: Vector2, amount: float, color: Color, prefix: String) -> void:
+	var text := prefix
+	if amount > 0.0:
+		text = ("%s %.1f" % [prefix, amount]).strip_edges() if prefix != "" else "%.1f" % amount
+	var label := Label.new()
+	label.text = text
+	label.position = pos - Vector2(56, 18)
+	label.size = Vector2(112, 36)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 20)
+	label.add_theme_color_override("font_color", color)
+	label.add_theme_color_override("font_shadow_color", Color("111111"))
+	label.add_theme_constant_override("shadow_offset_x", 2)
+	label.add_theme_constant_override("shadow_offset_y", 2)
+	add_child(label)
+	damage_pops.append({"pos": pos, "vel": Vector2(rng.randf_range(-18, 18), -52.0), "life": 0.72, "label": label})
+
+func _update_damage_pops(dt: float) -> void:
+	for i in range(damage_pops.size() - 1, -1, -1):
+		var p: Dictionary = damage_pops[i]
+		p["life"] = float(p["life"]) - dt
+		p["pos"] = p["pos"] + p["vel"] * dt
+		var label: Label = p["label"]
+		label.position = p["pos"] - Vector2(56, 18)
+		label.modulate.a = clampf(float(p["life"]) / 0.72, 0.0, 1.0)
+		if float(p["life"]) <= 0.0:
+			label.queue_free()
+			damage_pops.remove_at(i)
+
+func _update_trails(dt: float) -> void:
+	for i in range(trails.size() - 1, -1, -1):
+		var t: Dictionary = trails[i]
+		t["life"] = float(t["life"]) - dt
+		if float(t["life"]) <= 0.0:
+			trails.remove_at(i)
+
 func _finish_battle() -> void:
 	state = "result"
 	var a: Dictionary = fighters[0]
@@ -280,6 +392,7 @@ func _finish_battle() -> void:
 	else:
 		var winner: Dictionary = a if float(a["hp"]) > float(b["hp"]) else b
 		subtitle_label.text = "%s WINS - tap REMATCH or RANDOM" % str(winner["name"])
+	_play_sfx("win")
 
 func _sync_ui() -> void:
 	if fighters.size() != 2:
@@ -316,6 +429,8 @@ func _draw() -> void:
 	draw_rect(Rect2(368, 960, 316, 86), Color("f5f3f5"), true)
 	draw_rect(Rect2(36, 960, 316, 86), WALL, false, 3.0)
 	draw_rect(Rect2(368, 960, 316, 86), WALL, false, 3.0)
+	for t in trails:
+		_draw_trail(t)
 	if fighters.size() == 2:
 		_draw_fighter(fighters[0])
 		_draw_fighter(fighters[1])
@@ -334,6 +449,25 @@ func _draw_fighter(f: Dictionary) -> void:
 	draw_circle(pos, BALL_R + 4.0, Color("494949"))
 	draw_circle(pos, BALL_R, color)
 	draw_arc(pos, BALL_R + 6.0, 0.0, TAU * clampf(float(f["hp"]) / maxf(1.0, float(f["max_hp"])), 0.0, 1.0), 48, Color("ffffff"), 4.0)
+
+func _draw_trail(t: Dictionary) -> void:
+	var pos: Vector2 = t["pos"]
+	var angle := float(t["angle"])
+	var dir := Vector2.RIGHT.rotated(angle)
+	var color: Color = t["color"]
+	color.a = clampf(float(t["life"]) / 0.18, 0.0, 0.42)
+	var reach := 120.0
+	match str(t["weapon"]):
+		"staff":
+			reach = 150.0
+		"lance":
+			reach = 148.0
+		"gate":
+			reach = 105.0
+		_:
+			reach = 120.0
+	draw_line(pos + dir * 18.0, pos + dir * reach, color, 22.0, true)
+	draw_arc(pos, reach, angle - 0.24, angle + 0.24, 18, color, 7.0)
 
 func _draw_weapon(f: Dictionary) -> void:
 	var pos: Vector2 = f["pos"]
