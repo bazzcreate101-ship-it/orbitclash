@@ -53,6 +53,7 @@ var left_stat: Label
 var right_stat: Label
 var footer_label: Label
 var watermark_label: Label
+var controls_label: Label
 
 func _ready() -> void:
 	rng.randomize()
@@ -92,12 +93,14 @@ func _make_ui() -> void:
 	watermark_label = _label("@orbitclashsim", Vector2(0, 858), Vector2(W, 34), 18, HORIZONTAL_ALIGNMENT_CENTER)
 	watermark_label.add_theme_color_override("font_color", Color(0, 0, 0, 0.18))
 	footer_label = _label("tap RANDOM for a new question: who wins this matchup?", Vector2(28, 1138), Vector2(664, 36), 16, HORIZONTAL_ALIGNMENT_CENTER)
-	_button("< LEFT", Vector2(36, 1060), Vector2(140, 58), _left_prev)
-	_button("LEFT >", Vector2(184, 1060), Vector2(140, 58), _left_next)
-	_button("< RIGHT", Vector2(396, 1060), Vector2(140, 58), _right_prev)
-	_button("RIGHT >", Vector2(544, 1060), Vector2(140, 58), _right_next)
-	_button("RANDOM", Vector2(102, 1190), Vector2(220, 58), _random_button)
-	_button("REMATCH", Vector2(398, 1190), Vector2(220, 58), _rematch_button)
+	controls_label = _label("change matchup", Vector2(0, 1038), Vector2(W, 24), 15, HORIZONTAL_ALIGNMENT_CENTER)
+	controls_label.add_theme_color_override("font_color", Color(0, 0, 0, 0.55))
+	_button("< LEFT", Vector2(36, 1060), Vector2(136, 48), _left_prev)
+	_button("LEFT >", Vector2(180, 1060), Vector2(136, 48), _left_next)
+	_button("< RIGHT", Vector2(404, 1060), Vector2(136, 48), _right_prev)
+	_button("RIGHT >", Vector2(548, 1060), Vector2(136, 48), _right_next)
+	_button("RANDOM", Vector2(94, 1188), Vector2(232, 58), _random_button)
+	_button("REMATCH", Vector2(394, 1188), Vector2(232, 58), _rematch_button)
 
 func _label(text: String, pos: Vector2, size: Vector2, font_size: int, align) -> Label:
 	var l := Label.new()
@@ -134,8 +137,8 @@ func _start_battle() -> void:
 	var left_data: Dictionary = roster[left_idx]
 	var right_data: Dictionary = roster[right_idx]
 	fighters = [
-		_make_fighter(left_data, Vector2(176, 555), Vector2(165, -125), 0),
-		_make_fighter(right_data, Vector2(544, 555), Vector2(-165, 125), 1)
+		_make_fighter(left_data, Vector2(160, 560), Vector2(120, -90), 0),
+		_make_fighter(right_data, Vector2(560, 560), Vector2(-120, 90), 1)
 	]
 	for p in damage_pops:
 		if p.has("label") and is_instance_valid(p["label"]):
@@ -151,6 +154,8 @@ func _start_battle() -> void:
 	slowmo_timer = 0.0
 	shake_timer = 0.0
 	state = "battle"
+	fighters[0]["meter"] = -0.32
+	fighters[1]["meter"] = -0.32
 	_play_sfx("start", -2.0)
 	_sync_ui()
 
@@ -199,8 +204,6 @@ func _process(delta: float) -> void:
 		_resolve_ball_body(fighters[0], fighters[1])
 		_resolve_weapons(fighters[0], fighters[1])
 		_resolve_weapons(fighters[1], fighters[0])
-		_update_gates(dt)
-		_update_clones(dt)
 		_update_shots(dt)
 		_update_sparks(dt)
 		_update_gates(dt)
@@ -361,8 +364,8 @@ func _cast_signature(f: Dictionary, enemy: Dictionary) -> void:
 		_spawn_damage_pop(enemy["pos"] + Vector2(0, -58), 0.0, Color("9ceeff"), "FREEZE")
 		_play_sfx("freeze")
 	if data.has("ammo"):
-		for i in range(6):
-			_spawn_shot(f, enemy, i * 0.22 - 0.55, 3.6)
+		for i in range(4):
+			_spawn_shot(f, enemy, i * 0.18 - 0.27, 3.4)
 		_play_sfx("shoot")
 	if data.has("orb"):
 		for i in range(3):
