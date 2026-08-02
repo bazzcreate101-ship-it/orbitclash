@@ -28,6 +28,8 @@ var right_idx := 8
 var fighters := []
 var sparks := []
 var shots := []
+var gates := []
+var clones := []
 var trails := []
 var damage_pops := []
 var state := "battle"
@@ -140,6 +142,8 @@ func _start_battle() -> void:
 			p["label"].queue_free()
 	sparks.clear()
 	shots.clear()
+	gates.clear()
+	clones.clear()
 	trails.clear()
 	damage_pops.clear()
 	elapsed = 0.0
@@ -169,6 +173,8 @@ func _make_fighter(data: Dictionary, pos: Vector2, base_vel: Vector2, side: int)
 		"vel": v,
 		"side": side,
 		"meter": rng.randf_range(0.0, 0.65),
+		"freeze_timer": 0.0,
+		"dash_timer": 0.0,
 		"data": data
 	}
 
@@ -190,10 +196,15 @@ func _process(delta: float) -> void:
 	if state == "battle" and fighters.size() == 2:
 		_update_fighter(fighters[0], dt, fighters[1])
 		_update_fighter(fighters[1], dt, fighters[0])
+		_resolve_ball_body(fighters[0], fighters[1])
 		_resolve_weapons(fighters[0], fighters[1])
 		_resolve_weapons(fighters[1], fighters[0])
+		_update_gates(dt)
+		_update_clones(dt)
 		_update_shots(dt)
 		_update_sparks(dt)
+		_update_gates(dt)
+		_update_clones(dt)
 		_update_trails(dt)
 		_update_damage_pops(dt)
 		if float(fighters[0]["hp"]) <= 0.0 or float(fighters[1]["hp"]) <= 0.0 or elapsed > 42.0:
@@ -206,6 +217,11 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _update_fighter(f: Dictionary, dt: float, enemy: Dictionary) -> void:
+	if float(f["freeze_timer"]) > 0.0:
+		f["freeze_timer"] = maxf(0.0, float(f["freeze_timer"]) - dt)
+		dt *= 0.28
+	if float(f["dash_timer"]) > 0.0:
+		f["dash_timer"] = maxf(0.0, float(f["dash_timer"]) - dt)
 	f["angle"] = float(f["angle"]) + float(f["spin"]) * dt
 	var pos: Vector2 = f["pos"]
 	var vel: Vector2 = f["vel"]
@@ -230,6 +246,24 @@ func _update_fighter(f: Dictionary, dt: float, enemy: Dictionary) -> void:
 		_cast_signature(f, enemy)
 	_add_trail(f)
 
+func _resolve_ball_body(a: Dictionary, b: Dictionary) -> void:
+	var diff: Vector2 = b["pos"] - a["pos"]
+	var dist := diff.length()
+	if dist <= 0.01 or dist > BALL_R * 2.0:
+		return
+	var n := diff / dist
+	var overlap := BALL_R * 2.0 - dist
+	a["pos"] = a["pos"] - n * overlap * 0.5
+	b["pos"] = b["pos"] + n * overlap * 0.5
+	var av: Vector2 = a["vel"]
+	var bv: Vector2 = b["vel"]
+	var impulse := (av - bv).dot(n)
+	if impulse > 0.0:
+		a["vel"] = av - n * impulse * 0.85
+		b["vel"] = bv + n * impulse * 0.85
+		_spawn_spark(a["pos"].lerp(b["pos"], 0.5), Color("ffffff"), 4)
+		_play_sfx("wall", -4.0)
+
 func _add_trail(f: Dictionary) -> void:
 	trails.append({"pos": f["pos"], "angle": float(f["angle"]), "weapon": str(f["weapon"]), "color": f["color"], "life": 0.18})
 
@@ -250,11 +284,41 @@ func _weapon_reach(f: Dictionary) -> float:
 			return WEAPON_LEN
 
 func _resolve_weapons(a: Dictionary, b: Dictionary) -> void:
-	var tip := _weapon_tip(a)
+	if hit_cooldown > 0.0:
+		return
+	var points := _weapon_hit_points(a)
 	var target: Vector2 = b["pos"]
-	if hit_cooldown <= 0.0 and tip.distance_to(target) <= BALL_R + 20.0:
-		_apply_damage(a, b, 1.0, tip)
-		hit_cooldown = 0.11
+	for p in points:
+		if p.distance_to(target) <= BALL_R + 18.0:
+			var distance_bonus := 1.0 + clampf((p - a["pos"]).length() / 180.0, 0.0, 0.45)
+			_apply_damage(a, b, distance_bonus, p)
+			hit_cooldown = 0.10
+			return
+
+func _weapon_hit_points(f: Dictionary) -> Array:
+	var points := []
+	var pos: Vector2 = f["pos"]
+	var angle := float(f["angle"])
+	var weapon := str(f["weapon"])
+	match weapon:
+		"ice_daggers":
+			for i in range(4):
+				var dir := Vector2.RIGHT.rotated(angle + i * 0.45 - 0.68)
+				points.append(pos + dir * 112.0)
+				points.append(pos + dir * 78.0)
+		"staff":
+			var dir := Vector2.RIGHT.rotated(angle)
+			for t in [0.35, 0.55, 0.75, 0.95]:
+				points.append(pos + dir * 150.0 * float(t))
+		"gate":
+			var dir := Vector2.RIGHT.rotated(angle)
+			for t in [0.55, 0.8, 1.0]:
+				points.append(pos + dir * 105.0 * float(t))
+		_:
+			var dir := Vector2.RIGHT.rotated(angle)
+			points.append(pos + dir * _weapon_reach(f))
+			points.append(pos + dir * (_weapon_reach(f) * 0.72))
+	return points
 
 func _apply_damage(attacker: Dictionary, target: Dictionary, mult: float, point: Vector2) -> void:
 	var damage := float(attacker["damage"]) * mult * rng.randf_range(0.78, 1.28)
@@ -292,6 +356,7 @@ func _cast_signature(f: Dictionary, enemy: Dictionary) -> void:
 	var data: Dictionary = f["data"]
 	if data.has("freeze"):
 		enemy["vel"] = enemy["vel"] * float(data["freeze"])
+		enemy["freeze_timer"] = 1.05
 		_spawn_spark(enemy["pos"], Color("9ceeff"), 14)
 		_spawn_damage_pop(enemy["pos"] + Vector2(0, -58), 0.0, Color("9ceeff"), "FREEZE")
 		_play_sfx("freeze")
@@ -306,16 +371,42 @@ func _cast_signature(f: Dictionary, enemy: Dictionary) -> void:
 	if data.has("gates"):
 		for i in range(2):
 			_spawn_shot(f, enemy, -0.35 + i * 0.7, 5.5)
+			_spawn_gate(f, enemy, i)
 		_spawn_spark(f["pos"], Color("fff27e"), 18)
 		_play_sfx("gate")
 	if data.has("clone"):
-		_apply_damage(f, enemy, 0.65, enemy["pos"])
+		_spawn_clone(f, enemy)
+		_apply_damage(f, enemy, 0.45, enemy["pos"])
 		_spawn_spark(f["pos"] + Vector2(rng.randf_range(-70, 70), rng.randf_range(-70, 70)), f["color"], 12)
 		_play_sfx("ability", -2.0)
 	if data.has("karma"):
 		f["hp"] = minf(float(f["max_hp"]), float(f["hp"]) + 8.0)
 		_spawn_damage_pop(f["pos"] + Vector2(0, -58), 8.0, Color("ffffff"), "HEAL")
 		_play_sfx("ability", -4.0)
+	if data.has("pierce"):
+		var dir: Vector2 = (enemy["pos"] - f["pos"]).normalized()
+		f["vel"] = dir * 420.0
+		f["dash_timer"] = 0.22
+		_spawn_damage_pop(f["pos"] + Vector2(0, -60), 0.0, f["color"], "JUMP")
+	if data.has("crit"):
+		var dir2: Vector2 = (enemy["pos"] - f["pos"]).normalized()
+		f["vel"] = dir2.rotated(rng.randf_range(-0.42, 0.42)) * 360.0
+		f["dash_timer"] = 0.18
+
+func _spawn_gate(f: Dictionary, enemy: Dictionary, index: int) -> void:
+	var dir: Vector2 = (enemy["pos"] - f["pos"]).normalized().rotated(-0.45 + float(index) * 0.9)
+	var pos: Vector2 = f["pos"] + dir * 190.0
+	pos.x = clampf(pos.x, ARENA.position.x + 48.0, ARENA.end.x - 48.0)
+	pos.y = clampf(pos.y, ARENA.position.y + 48.0, ARENA.end.y - 48.0)
+	gates.append({"pos": pos, "angle": dir.angle(), "owner": int(f["side"]), "life": 2.4, "armed": 0.25, "color": f["color"]})
+
+func _spawn_clone(f: Dictionary, enemy: Dictionary) -> void:
+	var offset := Vector2.RIGHT.rotated(rng.randf_range(-PI, PI)) * rng.randf_range(75.0, 130.0)
+	var pos: Vector2 = f["pos"] + offset
+	pos.x = clampf(pos.x, ARENA.position.x + 42.0, ARENA.end.x - 42.0)
+	pos.y = clampf(pos.y, ARENA.position.y + 42.0, ARENA.end.y - 42.0)
+	var dir: Vector2 = (enemy["pos"] - pos).normalized()
+	clones.append({"pos": pos, "angle": dir.angle(), "vel": dir * 330.0, "owner": int(f["side"]), "life": 0.55, "color": f["color"], "damage": float(f["damage"]) * 0.9})
 
 func _spawn_shot(f: Dictionary, enemy: Dictionary, spread: float, damage: float) -> void:
 	var dir: Vector2 = (enemy["pos"] - f["pos"]).normalized().rotated(spread)
@@ -333,6 +424,38 @@ func _update_shots(dt: float) -> void:
 			shots.remove_at(i)
 		elif float(s["life"]) <= 0.0 or not ARENA.has_point(s["pos"]):
 			shots.remove_at(i)
+
+func _update_gates(dt: float) -> void:
+	if fighters.size() != 2:
+		return
+	for i in range(gates.size() - 1, -1, -1):
+		var g: Dictionary = gates[i]
+		g["life"] = float(g["life"]) - dt
+		g["armed"] = maxf(0.0, float(g["armed"]) - dt)
+		var target: Dictionary = fighters[1 - int(g["owner"])]
+		if float(g["armed"]) <= 0.0 and g["pos"].distance_to(target["pos"]) <= BALL_R + 44.0:
+			var attacker: Dictionary = fighters[int(g["owner"])]
+			_apply_damage(attacker, target, 1.25, g["pos"])
+			_spawn_spark(g["pos"], Color("fff27e"), 22)
+			_play_sfx("gate", 1.0)
+			gates.remove_at(i)
+		elif float(g["life"]) <= 0.0:
+			gates.remove_at(i)
+
+func _update_clones(dt: float) -> void:
+	if fighters.size() != 2:
+		return
+	for i in range(clones.size() - 1, -1, -1):
+		var c: Dictionary = clones[i]
+		c["life"] = float(c["life"]) - dt
+		c["pos"] = c["pos"] + c["vel"] * dt
+		var target: Dictionary = fighters[1 - int(c["owner"])]
+		if c["pos"].distance_to(target["pos"]) <= BALL_R + 18.0:
+			var attacker: Dictionary = fighters[int(c["owner"])]
+			_apply_damage(attacker, target, float(c["damage"]) / maxf(1.0, float(attacker["damage"])), c["pos"])
+			clones.remove_at(i)
+		elif float(c["life"]) <= 0.0 or not ARENA.has_point(c["pos"]):
+			clones.remove_at(i)
 
 func _spawn_spark(pos: Vector2, color: Color, amount: int) -> void:
 	for i in range(amount):
@@ -431,6 +554,10 @@ func _draw() -> void:
 	draw_rect(Rect2(368, 960, 316, 86), WALL, false, 3.0)
 	for t in trails:
 		_draw_trail(t)
+	for g in gates:
+		_draw_gate_hazard(g)
+	for c in clones:
+		_draw_clone(c)
 	if fighters.size() == 2:
 		_draw_fighter(fighters[0])
 		_draw_fighter(fighters[1])
@@ -583,6 +710,26 @@ func _draw_shot(s: Dictionary) -> void:
 	var dir := vel.normalized()
 	draw_line(pos - dir * 18.0, pos + dir * 12.0, WALL, 9.0, true)
 	draw_line(pos - dir * 18.0, pos + dir * 12.0, s["color"], 5.0, true)
+
+func _draw_gate_hazard(g: Dictionary) -> void:
+	var pos: Vector2 = g["pos"]
+	var angle := float(g["angle"]) + elapsed * 1.6
+	var color: Color = g["color"]
+	color.a = clampf(float(g["life"]) / 2.4, 0.15, 0.9)
+	var dir := Vector2.RIGHT.rotated(angle)
+	var n := dir.orthogonal()
+	var points := [pos - dir * 32.0 - n * 20.0, pos + dir * 32.0 - n * 20.0, pos + dir * 44.0, pos + dir * 32.0 + n * 20.0, pos - dir * 32.0 + n * 20.0]
+	draw_polygon(points, [color, color, Color("fff27e"), color, color])
+	for i in range(points.size()):
+		draw_line(points[i], points[(i + 1) % points.size()], WALL, 3.0, true)
+
+func _draw_clone(c: Dictionary) -> void:
+	var pos: Vector2 = c["pos"]
+	var color: Color = c["color"]
+	color.a = clampf(float(c["life"]) / 0.55, 0.12, 0.55)
+	draw_circle(pos, 22.0, color)
+	draw_circle(pos, 22.0, WALL, false, 3.0)
+	_draw_staff(pos, float(c["angle"]), color)
 
 func _left_prev() -> void:
 	left_idx = posmod(left_idx - 1, roster.size())

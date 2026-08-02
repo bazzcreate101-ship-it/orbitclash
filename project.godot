@@ -1,7 +1,7 @@
 [application]
 config/name="Orbit Clash Direct"
 config/description="Physics auto-battle arena with scaling fighter abilities"
-config/version="0.8.0-effects-audio"
+config/version="0.9.0-gameplay-physics"
 run/main_scene="res://Game.tscn"
 config/icon="res://icon.svg"
 config/features=PackedStringArray("4.2", "GL Compatibility")
