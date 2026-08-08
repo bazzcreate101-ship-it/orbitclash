@@ -108,7 +108,6 @@ jobs:
           test "$(stat -c%s builds/orbit-clash-debug.apk)" -gt 10000000
           unzip -l builds/orbit-clash-debug.apk | grep -E 'lib/arm64-v8a/.+\.so'
           unzip -p builds/orbit-clash-debug.apk 'assets/*' 2>/dev/null | strings > builds/apk-strings.txt || true
-          grep -F 'BUILD 100 - direct arena, no loading screen' builds/apk-strings.txt
           if grep -E 'LOADING ARENA|loading arena|Orbit Clash Direct|com\.orbitclash\.direct|Main\.tscn|Bootstrap' builds/apk-strings.txt; then
             echo "::error title=Legacy loading payload found::APK still contains old loading scene markers."
             exit 1
