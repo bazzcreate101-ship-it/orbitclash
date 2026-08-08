@@ -80,8 +80,8 @@ func _play_sfx(key: String, volume_shift := 0.0) -> void:
 	player.play()
 
 func _make_ui() -> void:
-	title_label = _label("Orbit Clash Sim", Vector2(0, 34), Vector2(W, 48), 36, HORIZONTAL_ALIGNMENT_CENTER)
-	subtitle_label = _label("pick two fighters, then watch the random physics battle", Vector2(0, 82), Vector2(W, 34), 17, HORIZONTAL_ALIGNMENT_CENTER)
+	title_label = _label("Orbit Clash MatchSim", Vector2(0, 34), Vector2(W, 48), 36, HORIZONTAL_ALIGNMENT_CENTER)
+	subtitle_label = _label("BUILD 100 - direct arena, no loading screen", Vector2(0, 82), Vector2(W, 34), 17, HORIZONTAL_ALIGNMENT_CENTER)
 	left_name = _label("", Vector2(36, 185), Vector2(300, 54), 34, HORIZONTAL_ALIGNMENT_LEFT)
 	right_name = _label("", Vector2(384, 185), Vector2(300, 54), 34, HORIZONTAL_ALIGNMENT_RIGHT)
 	left_hp = _label("", Vector2(0, 0), Vector2(72, 54), 24, HORIZONTAL_ALIGNMENT_CENTER)
