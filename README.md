@@ -1,6 +1,15 @@
-# Orbit Clash v0.5
+# Orbit Clash MatchSim 100
 
-Android-ready Godot 4 project for a vertical physics auto-battle game.
+Android-ready Godot 4 project for a vertical physics auto-battle game inspired by short-form "which fighter wins?" simulation videos.
+
+Current Android test build:
+
+- App label: `Orbit Clash MatchSim 100`
+- Package: `com.orbitclash.matchsim100`
+- Version: `1.0.2-matchsim102`
+- Version code: `102`
+- APK filename: `orbit-clash-matchsim100-v102.apk`
+- On-screen marker: `BUILD 102 | com.orbitclash.matchsim100 | v1.0.2`
 
 ## Included
 - 8 original fighters with different rule-changing mechanics.
@@ -19,18 +28,28 @@ Android-ready Godot 4 project for a vertical physics auto-battle game.
 ## Build APK
 Godot still needs its Android export templates and Android SDK/JDK configured on the machine doing the build.
 After that: Project > Export > Android Debug > Export Project.
-The preset points to `builds/orbit-clash-debug.apk`.
+The preset points to `builds/orbit-clash-matchsim100-v102.apk`.
 
 CLI after Android tooling is configured:
-`godot --headless --path . --export-debug "Android Debug" builds/orbit-clash-debug.apk`
+`godot --headless --path . --export-debug "Android Debug" builds/orbit-clash-matchsim100-v102.apk`
 
 ## Download APK from GitHub Actions
 Every push to `main` starts the **Build Android APK** workflow. You can also run it manually from the Actions tab using **Run workflow**.
 
 1. Open the latest successful **Build Android APK** run.
 2. Scroll to the **Artifacts** section.
-3. Download `orbit-clash-android-debug`.
-4. Extract the ZIP and install `orbit-clash-debug.apk` on an Android device.
+3. Download `orbit-clash-matchsim100-v102-android-debug`.
+4. Extract the ZIP.
+5. Install `orbit-clash-matchsim100-v102.apk` on an Android device.
+6. Open the app named `Orbit Clash MatchSim 100`.
+
+The artifact ZIP also includes:
+
+- `APK_BADGING.txt` — manifest proof from `aapt dump badging`.
+- `SHA256SUMS.txt` — checksum for the APK.
+- `INSTALL_THIS_APK.txt` — short install instructions.
+
+If the screen says `ORBIT CLASH LOADING ARENA`, that is an old package/build. The current app must show the permanent marker `BUILD 102 | com.orbitclash.matchsim100 | v1.0.2`.
 
 Android may ask you to allow installation from your browser or file manager. This artifact uses a debug signing key and is intended for testing only.
 
