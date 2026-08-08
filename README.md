@@ -51,6 +51,8 @@ The artifact ZIP also includes:
 
 If the screen says `ORBIT CLASH LOADING ARENA`, that is an old package/build. The current app must show the permanent marker `BUILD 102 | com.orbitclash.matchsim100 | v1.0.2`.
 
+See [INSTALL_ANDROID.md](INSTALL_ANDROID.md) for clean-install steps and old package names to remove.
+
 Android may ask you to allow installation from your browser or file manager. This artifact uses a debug signing key and is intended for testing only.
 
 ## Play Store
