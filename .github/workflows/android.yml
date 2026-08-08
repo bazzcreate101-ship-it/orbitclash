@@ -107,17 +107,37 @@ jobs:
           test -s builds/orbit-clash-matchsim100-v101.apk
           test "$(stat -c%s builds/orbit-clash-matchsim100-v101.apk)" -gt 10000000
           unzip -l builds/orbit-clash-matchsim100-v101.apk | grep -E 'lib/arm64-v8a/.+\.so'
+          AAPT="$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -n1)"
+          "$AAPT" dump badging builds/orbit-clash-matchsim100-v101.apk | tee builds/APK_BADGING.txt
+          grep -F "package: name='com.orbitclash.matchsim100' versionCode='101' versionName='1.0.1-matchsim101'" builds/APK_BADGING.txt
+          grep -F "application-label:'Orbit Clash MatchSim 100'" builds/APK_BADGING.txt
           unzip -p builds/orbit-clash-matchsim100-v101.apk 'assets/*' 2>/dev/null | strings > builds/apk-strings.txt || true
           if grep -E 'LOADING ARENA|loading arena|Orbit Clash Direct|com\.orbitclash\.direct|Main\.tscn|Bootstrap' builds/apk-strings.txt; then
             echo "::error title=Legacy loading payload found::APK still contains old loading scene markers."
             exit 1
           fi
+          (cd builds && sha256sum orbit-clash-matchsim100-v101.apk > SHA256SUMS.txt)
+          cat > builds/INSTALL_THIS_APK.txt <<'EOF'
+          Install this exact APK:
+          - File: orbit-clash-matchsim100-v101.apk
+          - App label: Orbit Clash MatchSim 100
+          - Package: com.orbitclash.matchsim100
+          - Version: 1.0.1-matchsim101
+          - Version code: 101
+
+          If Android still opens a screen that says "ORBIT CLASH LOADING ARENA",
+          that is an older app/package. Open "Orbit Clash MatchSim 100" instead.
+          EOF
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v7
         with:
           name: orbit-clash-matchsim100-v101-android-debug
-          path: builds/orbit-clash-matchsim100-v101.apk
+          path: |
+            builds/orbit-clash-matchsim100-v101.apk
+            builds/APK_BADGING.txt
+            builds/SHA256SUMS.txt
+            builds/INSTALL_THIS_APK.txt
           if-no-files-found: error
           retention-days: 30
 
