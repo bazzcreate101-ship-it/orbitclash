@@ -91,7 +91,7 @@ jobs:
           mkdir -p builds
           set +e
           godot --headless --path . \
-            --export-debug "Android Debug" builds/orbit-clash-matchsim100-v101.apk \
+            --export-debug "Android Debug" builds/orbit-clash-matchsim100-v102.apk \
             2>&1 | tee builds/export.log
           export_status=${PIPESTATUS[0]}
           set -e
@@ -104,26 +104,26 @@ jobs:
 
       - name: Verify APK
         run: |
-          test -s builds/orbit-clash-matchsim100-v101.apk
-          test "$(stat -c%s builds/orbit-clash-matchsim100-v101.apk)" -gt 10000000
-          unzip -l builds/orbit-clash-matchsim100-v101.apk | grep -E 'lib/arm64-v8a/.+\.so'
+          test -s builds/orbit-clash-matchsim100-v102.apk
+          test "$(stat -c%s builds/orbit-clash-matchsim100-v102.apk)" -gt 10000000
+          unzip -l builds/orbit-clash-matchsim100-v102.apk | grep -E 'lib/arm64-v8a/.+\.so'
           AAPT="$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -n1)"
-          "$AAPT" dump badging builds/orbit-clash-matchsim100-v101.apk | tee builds/APK_BADGING.txt
-          grep -F "package: name='com.orbitclash.matchsim100' versionCode='101' versionName='1.0.1-matchsim101'" builds/APK_BADGING.txt
+          "$AAPT" dump badging builds/orbit-clash-matchsim100-v102.apk | tee builds/APK_BADGING.txt
+          grep -F "package: name='com.orbitclash.matchsim100' versionCode='102' versionName='1.0.2-matchsim102'" builds/APK_BADGING.txt
           grep -F "application-label:'Orbit Clash MatchSim 100'" builds/APK_BADGING.txt
-          unzip -p builds/orbit-clash-matchsim100-v101.apk 'assets/*' 2>/dev/null | strings > builds/apk-strings.txt || true
+          unzip -p builds/orbit-clash-matchsim100-v102.apk 'assets/*' 2>/dev/null | strings > builds/apk-strings.txt || true
           if grep -E 'LOADING ARENA|loading arena|Orbit Clash Direct|com\.orbitclash\.direct|Main\.tscn|Bootstrap' builds/apk-strings.txt; then
             echo "::error title=Legacy loading payload found::APK still contains old loading scene markers."
             exit 1
           fi
-          (cd builds && sha256sum orbit-clash-matchsim100-v101.apk > SHA256SUMS.txt)
+          (cd builds && sha256sum orbit-clash-matchsim100-v102.apk > SHA256SUMS.txt)
           cat > builds/INSTALL_THIS_APK.txt <<'EOF'
           Install this exact APK:
-          - File: orbit-clash-matchsim100-v101.apk
+          - File: orbit-clash-matchsim100-v102.apk
           - App label: Orbit Clash MatchSim 100
           - Package: com.orbitclash.matchsim100
-          - Version: 1.0.1-matchsim101
-          - Version code: 101
+          - Version: 1.0.2-matchsim102
+          - Version code: 102
 
           If Android still opens a screen that says "ORBIT CLASH LOADING ARENA",
           that is an older app/package. Open "Orbit Clash MatchSim 100" instead.
@@ -132,9 +132,9 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v7
         with:
-          name: orbit-clash-matchsim100-v101-android-debug
+          name: orbit-clash-matchsim100-v102-android-debug
           path: |
-            builds/orbit-clash-matchsim100-v101.apk
+            builds/orbit-clash-matchsim100-v102.apk
             builds/APK_BADGING.txt
             builds/SHA256SUMS.txt
             builds/INSTALL_THIS_APK.txt

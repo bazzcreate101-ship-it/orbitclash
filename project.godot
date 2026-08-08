@@ -1,7 +1,7 @@
 [application]
 config/name="Orbit Clash MatchSim 100"
 config/description="Physics auto-battle arena with scaling fighter abilities"
-config/version="1.0.1-matchsim101"
+config/version="1.0.2-matchsim102"
 run/main_scene="res://Game.tscn"
 config/icon="res://icon.svg"
 config/features=PackedStringArray("4.2", "GL Compatibility")
