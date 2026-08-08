@@ -37,6 +37,7 @@ jobs:
           test ! -e Bootstrap.tscn
           grep -F 'package/unique_name="com.orbitclash.matchsim100"' export_presets.cfg
           if grep -R -n -E 'LOADING ARENA|loading arena|Orbit Clash Direct|com\.orbitclash\.direct|Main\.tscn|Bootstrap' \
+            --include='*.gd' --include='*.tscn' --include='*.godot' --include='export_presets.cfg' \
             --exclude-dir=.git --exclude-dir=.github --exclude-dir=android --exclude-dir=builds .; then
             echo "::error title=Legacy loading source found::The exported APK would be ambiguous or stale."
             exit 1
@@ -89,53 +90,78 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p builds
-          set +e
-          godot --headless --path . \
-            --export-debug "Android Debug" builds/orbit-clash-matchsim100-v102.apk \
-            2>&1 | tee builds/export.log
-          export_status=${PIPESTATUS[0]}
-          set -e
-          if [ "$export_status" -ne 0 ]; then
-            error_summary="$(tail -n 80 builds/export.log | sed -E 's/\x1B\[[0-9;]*[mK]//g' | sed ':a;N;$!ba;s/\n/%0A/g' | sed 's/%/%25/g; s/\r/%0D/g')"
-            sdk_inventory="ANDROID_HOME=$ANDROID_HOME; build-tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -printf '%f,' 2>/dev/null); platforms=$(find "$ANDROID_HOME/platforms" -mindepth 1 -maxdepth 1 -printf '%f,' 2>/dev/null); setting=$(grep 'android_sdk_path' "$HOME/.config/godot"/editor_settings-4*.tres 2>/dev/null | tr '\n' ' ')"
-            echo "::error title=Godot Android export failed::$sdk_inventory | $error_summary"
-            exit "$export_status"
-          fi
+          export_variant() {
+            local package_id="$1"
+            local app_name="$2"
+            local apk_path="$3"
+            local log_path="$4"
+            sed -i -E "s#^package/unique_name=.*#package/unique_name=\"${package_id}\"#" export_presets.cfg
+            sed -i -E "s#^package/name=.*#package/name=\"${app_name}\"#" export_presets.cfg
+            sed -i -E "s#^export_path=.*#export_path=\"${apk_path}\"#" export_presets.cfg
+            set +e
+            godot --headless --path . --export-debug "Android Debug" "$apk_path" 2>&1 | tee "$log_path"
+            local export_status=${PIPESTATUS[0]}
+            set -e
+            if [ "$export_status" -ne 0 ]; then
+              error_summary="$(tail -n 80 "$log_path" | sed -E 's/\x1B\[[0-9;]*[mK]//g' | sed ':a;N;$!ba;s/\n/%0A/g' | sed 's/%/%25/g; s/\r/%0D/g')"
+              sdk_inventory="ANDROID_HOME=$ANDROID_HOME; build-tools=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -printf '%f,' 2>/dev/null); platforms=$(find "$ANDROID_HOME/platforms" -mindepth 1 -maxdepth 1 -printf '%f,' 2>/dev/null); setting=$(grep 'android_sdk_path' "$HOME/.config/godot"/editor_settings-4*.tres 2>/dev/null | tr '\n' ' ')"
+              echo "::error title=Godot Android export failed::$sdk_inventory | $error_summary"
+              exit "$export_status"
+            fi
+          }
+          export_variant "com.orbitclash.matchsim100" "Orbit Clash MatchSim 100" "builds/orbit-clash-matchsim100-v103.apk" "builds/export-matchsim100.log"
+          export_variant "com.orbitclash.game" "Orbit Clash Game Fixed" "builds/orbit-clash-replace-com-orbitclash-game-v103.apk" "builds/export-replace-game.log"
+          export_variant "com.orbitclash.direct" "Orbit Clash Fixed Direct" "builds/orbit-clash-replace-com-orbitclash-direct-v103.apk" "builds/export-replace-direct.log"
 
       - name: Verify APK
         run: |
-          test -s builds/orbit-clash-matchsim100-v102.apk
-          test "$(stat -c%s builds/orbit-clash-matchsim100-v102.apk)" -gt 10000000
-          unzip -l builds/orbit-clash-matchsim100-v102.apk | grep -E 'lib/arm64-v8a/.+\.so'
           AAPT="$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -n1)"
-          "$AAPT" dump badging builds/orbit-clash-matchsim100-v102.apk | tee builds/APK_BADGING.txt
-          grep -F "package: name='com.orbitclash.matchsim100' versionCode='102' versionName='1.0.2-matchsim102'" builds/APK_BADGING.txt
-          grep -F "application-label:'Orbit Clash MatchSim 100'" builds/APK_BADGING.txt
-          unzip -p builds/orbit-clash-matchsim100-v102.apk 'assets/*' 2>/dev/null | strings > builds/apk-strings.txt || true
-          if grep -E 'LOADING ARENA|loading arena|Orbit Clash Direct|com\.orbitclash\.direct|Main\.tscn|Bootstrap' builds/apk-strings.txt; then
-            echo "::error title=Legacy loading payload found::APK still contains old loading scene markers."
-            exit 1
-          fi
-          (cd builds && sha256sum orbit-clash-matchsim100-v102.apk > SHA256SUMS.txt)
+          verify_variant() {
+            local apk_path="$1"
+            local package_id="$2"
+            local app_name="$3"
+            local badging_path="$4"
+            test -s "$apk_path"
+            test "$(stat -c%s "$apk_path")" -gt 10000000
+            unzip -l "$apk_path" | grep -E 'lib/arm64-v8a/.+\.so'
+            "$AAPT" dump badging "$apk_path" | tee "$badging_path"
+            grep -F "package: name='${package_id}' versionCode='103' versionName='1.0.3-matchsim103'" "$badging_path"
+            grep -F "application-label:'${app_name}'" "$badging_path"
+            unzip -p "$apk_path" 'assets/*' 2>/dev/null | strings > "${badging_path}.strings.txt" || true
+            if grep -E 'LOADING ARENA|loading arena|Main\.tscn|Bootstrap' "${badging_path}.strings.txt"; then
+              echo "::error title=Legacy loading payload found::$apk_path still contains old loading scene markers."
+              exit 1
+            fi
+          }
+          verify_variant "builds/orbit-clash-matchsim100-v103.apk" "com.orbitclash.matchsim100" "Orbit Clash MatchSim 100" "builds/APK_BADGING-matchsim100.txt"
+          verify_variant "builds/orbit-clash-replace-com-orbitclash-game-v103.apk" "com.orbitclash.game" "Orbit Clash Game Fixed" "builds/APK_BADGING-replace-game.txt"
+          verify_variant "builds/orbit-clash-replace-com-orbitclash-direct-v103.apk" "com.orbitclash.direct" "Orbit Clash Fixed Direct" "builds/APK_BADGING-replace-direct.txt"
+          (cd builds && sha256sum orbit-clash-matchsim100-v103.apk orbit-clash-replace-com-orbitclash-game-v103.apk orbit-clash-replace-com-orbitclash-direct-v103.apk > SHA256SUMS.txt)
           cat > builds/INSTALL_THIS_APK.txt <<'EOF'
-          Install this exact APK:
-          - File: orbit-clash-matchsim100-v102.apk
+          Recommended install:
+          - File: orbit-clash-matchsim100-v103.apk
           - App label: Orbit Clash MatchSim 100
           - Package: com.orbitclash.matchsim100
-          - Version: 1.0.2-matchsim102
-          - Version code: 102
+          - Version: 1.0.3-matchsim103
+          - Version code: 103
+
+          If the phone keeps opening an old Orbit Clash app, install the matching replacement APK:
+          - Old package com.orbitclash.game: orbit-clash-replace-com-orbitclash-game-v103.apk
+          - Old package com.orbitclash.direct: orbit-clash-replace-com-orbitclash-direct-v103.apk
 
           If Android still opens a screen that says "ORBIT CLASH LOADING ARENA",
-          that is an older app/package. Open "Orbit Clash MatchSim 100" instead.
+          that is an older package/app icon. Use one of the replacement APKs above or uninstall the old app.
           EOF
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v7
         with:
-          name: orbit-clash-matchsim100-v102-android-debug
+          name: orbit-clash-matchsim100-v103-plus-legacy-replacements
           path: |
-            builds/orbit-clash-matchsim100-v102.apk
-            builds/APK_BADGING.txt
+            builds/orbit-clash-matchsim100-v103.apk
+            builds/orbit-clash-replace-com-orbitclash-game-v103.apk
+            builds/orbit-clash-replace-com-orbitclash-direct-v103.apk
+            builds/APK_BADGING-*.txt
             builds/SHA256SUMS.txt
             builds/INSTALL_THIS_APK.txt
           if-no-files-found: error

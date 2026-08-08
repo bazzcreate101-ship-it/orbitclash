@@ -83,7 +83,7 @@ func _play_sfx(key: String, volume_shift := 0.0) -> void:
 func _make_ui() -> void:
 	title_label = _label("Orbit Clash MatchSim", Vector2(0, 34), Vector2(W, 48), 36, HORIZONTAL_ALIGNMENT_CENTER)
 	subtitle_label = _label("direct arena, no loading screen", Vector2(0, 82), Vector2(W, 34), 17, HORIZONTAL_ALIGNMENT_CENTER)
-	build_label = _label("BUILD 102 | com.orbitclash.matchsim100 | v1.0.2", Vector2(0, 120), Vector2(W, 26), 14, HORIZONTAL_ALIGNMENT_CENTER)
+	build_label = _label("BUILD 103 | multi-package fixed build | v1.0.3", Vector2(0, 120), Vector2(W, 26), 14, HORIZONTAL_ALIGNMENT_CENTER)
 	build_label.add_theme_color_override("font_color", Color(0, 0, 0, 0.62))
 	left_name = _label("", Vector2(36, 185), Vector2(300, 54), 34, HORIZONTAL_ALIGNMENT_LEFT)
 	right_name = _label("", Vector2(384, 185), Vector2(300, 54), 34, HORIZONTAL_ALIGNMENT_RIGHT)

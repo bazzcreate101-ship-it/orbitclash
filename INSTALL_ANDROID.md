@@ -4,41 +4,49 @@ Use this file when the phone still opens an old `ORBIT CLASH LOADING ARENA` scre
 
 ## Current build
 
-- Install APK: `orbit-clash-matchsim100-v102.apk`
+- Main APK: `orbit-clash-matchsim100-v103.apk`
 - App name on Android: `Orbit Clash MatchSim 100`
 - Package: `com.orbitclash.matchsim100`
-- Version: `1.0.2-matchsim102`
-- Version code: `102`
-- Permanent in-game marker: `BUILD 102 | com.orbitclash.matchsim100 | v1.0.2`
+- Version: `1.0.3-matchsim103`
+- Version code: `103`
+- Permanent in-game marker: `BUILD 103 | multi-package fixed build | v1.0.3`
 
-## Old packages to remove
+## APKs included in the artifact
 
-If the phone still opens a loading screen, uninstall these older packages/apps if they exist:
+The GitHub Actions artifact `orbit-clash-matchsim100-v103-plus-legacy-replacements` contains three installable APKs:
 
-- `com.orbitclash.game`
-- `com.orbitclash.direct`
-
-The current build is a different package:
-
-- `com.orbitclash.matchsim100`
+1. `orbit-clash-matchsim100-v103.apk`
+   - New clean package: `com.orbitclash.matchsim100`
+   - Open app: `Orbit Clash MatchSim 100`
+2. `orbit-clash-replace-com-orbitclash-game-v103.apk`
+   - Replaces old package: `com.orbitclash.game`
+   - Use this if the old app icon still opens the loading screen.
+3. `orbit-clash-replace-com-orbitclash-direct-v103.apk`
+   - Replaces old package: `com.orbitclash.direct`
+   - Use this if the old direct-build app icon still opens the loading screen.
 
 ## Clean install steps
 
-1. On Android, uninstall old Orbit Clash apps if visible.
-2. Download the latest GitHub Actions artifact named `orbit-clash-matchsim100-v102-android-debug`.
-3. Extract the ZIP.
-4. Install exactly `orbit-clash-matchsim100-v102.apk`.
-5. Open `Orbit Clash MatchSim 100`.
-6. Confirm the screen shows `BUILD 102 | com.orbitclash.matchsim100 | v1.0.2`.
+1. Download the latest successful GitHub Actions artifact named `orbit-clash-matchsim100-v103-plus-legacy-replacements`.
+2. Extract the ZIP.
+3. Install `orbit-clash-matchsim100-v103.apk`.
+4. Open `Orbit Clash MatchSim 100`.
+5. Confirm the screen shows `BUILD 103 | multi-package fixed build | v1.0.3`.
+
+If Android still opens `ORBIT CLASH LOADING ARENA`, install the matching replacement APK:
+
+- For old `com.orbitclash.game`, install `orbit-clash-replace-com-orbitclash-game-v103.apk`.
+- For old `com.orbitclash.direct`, install `orbit-clash-replace-com-orbitclash-direct-v103.apk`.
 
 ## ADB cleanup, optional
 
-If ADB is available, run:
+If ADB is available and you want a completely clean install:
 
 ```sh
 adb uninstall com.orbitclash.game
 adb uninstall com.orbitclash.direct
-adb install -r orbit-clash-matchsim100-v102.apk
+adb uninstall com.orbitclash.matchsim100
+adb install -r orbit-clash-matchsim100-v103.apk
 ```
 
-If Android says one of the old packages is not installed, that is fine.
+If Android says one of the packages is not installed, that is fine.
