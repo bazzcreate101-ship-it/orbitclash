@@ -91,7 +91,7 @@ jobs:
           mkdir -p builds
           set +e
           godot --headless --path . \
-            --export-debug "Android Debug" builds/orbit-clash-debug.apk \
+            --export-debug "Android Debug" builds/orbit-clash-matchsim100-v101.apk \
             2>&1 | tee builds/export.log
           export_status=${PIPESTATUS[0]}
           set -e
@@ -104,10 +104,10 @@ jobs:
 
       - name: Verify APK
         run: |
-          test -s builds/orbit-clash-debug.apk
-          test "$(stat -c%s builds/orbit-clash-debug.apk)" -gt 10000000
-          unzip -l builds/orbit-clash-debug.apk | grep -E 'lib/arm64-v8a/.+\.so'
-          unzip -p builds/orbit-clash-debug.apk 'assets/*' 2>/dev/null | strings > builds/apk-strings.txt || true
+          test -s builds/orbit-clash-matchsim100-v101.apk
+          test "$(stat -c%s builds/orbit-clash-matchsim100-v101.apk)" -gt 10000000
+          unzip -l builds/orbit-clash-matchsim100-v101.apk | grep -E 'lib/arm64-v8a/.+\.so'
+          unzip -p builds/orbit-clash-matchsim100-v101.apk 'assets/*' 2>/dev/null | strings > builds/apk-strings.txt || true
           if grep -E 'LOADING ARENA|loading arena|Orbit Clash Direct|com\.orbitclash\.direct|Main\.tscn|Bootstrap' builds/apk-strings.txt; then
             echo "::error title=Legacy loading payload found::APK still contains old loading scene markers."
             exit 1
@@ -116,8 +116,8 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v7
         with:
-          name: orbit-clash-matchsim100-android-debug
-          path: builds/orbit-clash-debug.apk
+          name: orbit-clash-matchsim100-v101-android-debug
+          path: builds/orbit-clash-matchsim100-v101.apk
           if-no-files-found: error
           retention-days: 30
 
