@@ -26,6 +26,22 @@ jobs:
       - name: Check out project
         uses: actions/checkout@v6
 
+      - name: Verify clean direct-game source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(grep -c '^run/main_scene="res://Game.tscn"$' project.godot)" -eq 1
+          test ! -e Main.gd
+          test ! -e Main.tscn
+          test ! -e Bootstrap.gd
+          test ! -e Bootstrap.tscn
+          grep -F 'package/unique_name="com.orbitclash.matchsim100"' export_presets.cfg
+          if grep -R -n -E 'LOADING ARENA|loading arena|Orbit Clash Direct|com\.orbitclash\.direct|Main\.tscn|Bootstrap' \
+            --exclude-dir=.git --exclude-dir=.github --exclude-dir=android --exclude-dir=builds .; then
+            echo "::error title=Legacy loading source found::The exported APK would be ambiguous or stale."
+            exit 1
+          fi
+
       - name: Prepare Godot environment
         run: |
           mkdir -p "$HOME/.local/share/godot/export_templates"
@@ -91,11 +107,17 @@ jobs:
           test -s builds/orbit-clash-debug.apk
           test "$(stat -c%s builds/orbit-clash-debug.apk)" -gt 10000000
           unzip -l builds/orbit-clash-debug.apk | grep -E 'lib/arm64-v8a/.+\.so'
+          unzip -p builds/orbit-clash-debug.apk 'assets/*' 2>/dev/null | strings > builds/apk-strings.txt || true
+          grep -F 'BUILD 100 - direct arena, no loading screen' builds/apk-strings.txt
+          if grep -E 'LOADING ARENA|loading arena|Orbit Clash Direct|com\.orbitclash\.direct|Main\.tscn|Bootstrap' builds/apk-strings.txt; then
+            echo "::error title=Legacy loading payload found::APK still contains old loading scene markers."
+            exit 1
+          fi
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v7
         with:
-          name: orbit-clash-android-debug
+          name: orbit-clash-matchsim100-android-debug
           path: builds/orbit-clash-debug.apk
           if-no-files-found: error
           retention-days: 30
