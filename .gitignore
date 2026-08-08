@@ -4,4 +4,5 @@ builds/*
 *.apk
 *.aab
 *.keystore
+!ci/orbitclash-debug.keystore
 *.jks

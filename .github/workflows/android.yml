@@ -53,24 +53,14 @@ jobs:
           sdkmanager --sdk_root="$ANDROID_HOME" \
             "platform-tools" "platforms;android-34" "build-tools;34.0.0"
           JAVA_SDK_PATH="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
-          if [ ! -f /root/debug.keystore ]; then
-            keytool -genkeypair -v \
-              -keystore /root/debug.keystore \
-              -storepass android \
-              -alias androiddebugkey \
-              -keypass android \
-              -keyalg RSA \
-              -keysize 2048 \
-              -validity 10000 \
-              -dname "CN=Android Debug,O=Android,C=US"
-          fi
+          test -s ci/orbitclash-debug.keystore
           cat > "$HOME/.config/godot/editor_settings-4.tres" <<EOF
           [gd_resource type="EditorSettings" format=3]
 
           [resource]
           export/android/java_sdk_path = "$JAVA_SDK_PATH"
           export/android/android_sdk_path = "$ANDROID_HOME"
-          export/android/debug_keystore = "/root/debug.keystore"
+          export/android/debug_keystore = "$GITHUB_WORKSPACE/ci/orbitclash-debug.keystore"
           export/android/debug_keystore_user = "androiddebugkey"
           export/android/debug_keystore_pass = "android"
           export/android/force_system_user = false
@@ -81,10 +71,10 @@ jobs:
       - name: Export Android APK
         shell: bash
         env:
-          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: /root/debug.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: ${{ github.workspace }}/ci/orbitclash-debug.keystore
           GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
           GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
-          GODOT_ANDROID_KEYSTORE_RELEASE_PATH: /root/debug.keystore
+          GODOT_ANDROID_KEYSTORE_RELEASE_PATH: ${{ github.workspace }}/ci/orbitclash-debug.keystore
           GODOT_ANDROID_KEYSTORE_RELEASE_USER: androiddebugkey
           GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD: android
         run: |
@@ -109,9 +99,9 @@ jobs:
               exit "$export_status"
             fi
           }
-          export_variant "com.orbitclash.matchsim100" "Orbit Clash MatchSim 100" "builds/orbit-clash-matchsim100-v103.apk" "builds/export-matchsim100.log"
-          export_variant "com.orbitclash.game" "Orbit Clash Game Fixed" "builds/orbit-clash-replace-com-orbitclash-game-v103.apk" "builds/export-replace-game.log"
-          export_variant "com.orbitclash.direct" "Orbit Clash Fixed Direct" "builds/orbit-clash-replace-com-orbitclash-direct-v103.apk" "builds/export-replace-direct.log"
+          export_variant "com.orbitclash.matchsim100" "Orbit Clash MatchSim 100" "builds/orbit-clash-matchsim100-v104.apk" "builds/export-matchsim100.log"
+          export_variant "com.orbitclash.game" "Orbit Clash Game Fixed" "builds/orbit-clash-replace-com-orbitclash-game-v104.apk" "builds/export-replace-game.log"
+          export_variant "com.orbitclash.direct" "Orbit Clash Fixed Direct" "builds/orbit-clash-replace-com-orbitclash-direct-v104.apk" "builds/export-replace-direct.log"
 
       - name: Verify APK
         run: |
@@ -125,7 +115,7 @@ jobs:
             test "$(stat -c%s "$apk_path")" -gt 10000000
             unzip -l "$apk_path" | grep -E 'lib/arm64-v8a/.+\.so'
             "$AAPT" dump badging "$apk_path" | tee "$badging_path"
-            grep -F "package: name='${package_id}' versionCode='103' versionName='1.0.3-matchsim103'" "$badging_path"
+            grep -F "package: name='${package_id}' versionCode='104' versionName='1.0.4-matchsim104'" "$badging_path"
             grep -F "application-label:'${app_name}'" "$badging_path"
             unzip -p "$apk_path" 'assets/*' 2>/dev/null | strings > "${badging_path}.strings.txt" || true
             if grep -E 'LOADING ARENA|loading arena|Main\.tscn|Bootstrap' "${badging_path}.strings.txt"; then
@@ -133,21 +123,21 @@ jobs:
               exit 1
             fi
           }
-          verify_variant "builds/orbit-clash-matchsim100-v103.apk" "com.orbitclash.matchsim100" "Orbit Clash MatchSim 100" "builds/APK_BADGING-matchsim100.txt"
-          verify_variant "builds/orbit-clash-replace-com-orbitclash-game-v103.apk" "com.orbitclash.game" "Orbit Clash Game Fixed" "builds/APK_BADGING-replace-game.txt"
-          verify_variant "builds/orbit-clash-replace-com-orbitclash-direct-v103.apk" "com.orbitclash.direct" "Orbit Clash Fixed Direct" "builds/APK_BADGING-replace-direct.txt"
-          (cd builds && sha256sum orbit-clash-matchsim100-v103.apk orbit-clash-replace-com-orbitclash-game-v103.apk orbit-clash-replace-com-orbitclash-direct-v103.apk > SHA256SUMS.txt)
+          verify_variant "builds/orbit-clash-matchsim100-v104.apk" "com.orbitclash.matchsim100" "Orbit Clash MatchSim 100" "builds/APK_BADGING-matchsim100.txt"
+          verify_variant "builds/orbit-clash-replace-com-orbitclash-game-v104.apk" "com.orbitclash.game" "Orbit Clash Game Fixed" "builds/APK_BADGING-replace-game.txt"
+          verify_variant "builds/orbit-clash-replace-com-orbitclash-direct-v104.apk" "com.orbitclash.direct" "Orbit Clash Fixed Direct" "builds/APK_BADGING-replace-direct.txt"
+          (cd builds && sha256sum orbit-clash-matchsim100-v104.apk orbit-clash-replace-com-orbitclash-game-v104.apk orbit-clash-replace-com-orbitclash-direct-v104.apk > SHA256SUMS.txt)
           cat > builds/INSTALL_THIS_APK.txt <<'EOF'
           Recommended install:
-          - File: orbit-clash-matchsim100-v103.apk
+          - File: orbit-clash-matchsim100-v104.apk
           - App label: Orbit Clash MatchSim 100
           - Package: com.orbitclash.matchsim100
-          - Version: 1.0.3-matchsim103
-          - Version code: 103
+          - Version: 1.0.4-matchsim104
+          - Version code: 104
 
           If the phone keeps opening an old Orbit Clash app, install the matching replacement APK:
-          - Old package com.orbitclash.game: orbit-clash-replace-com-orbitclash-game-v103.apk
-          - Old package com.orbitclash.direct: orbit-clash-replace-com-orbitclash-direct-v103.apk
+          - Old package com.orbitclash.game: orbit-clash-replace-com-orbitclash-game-v104.apk
+          - Old package com.orbitclash.direct: orbit-clash-replace-com-orbitclash-direct-v104.apk
 
           If Android still opens a screen that says "ORBIT CLASH LOADING ARENA",
           that is an older package/app icon. Use one of the replacement APKs above or uninstall the old app.
@@ -156,11 +146,11 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v7
         with:
-          name: orbit-clash-matchsim100-v103-plus-legacy-replacements
+          name: orbit-clash-matchsim100-v104-stable-signed-replacements
           path: |
-            builds/orbit-clash-matchsim100-v103.apk
-            builds/orbit-clash-replace-com-orbitclash-game-v103.apk
-            builds/orbit-clash-replace-com-orbitclash-direct-v103.apk
+            builds/orbit-clash-matchsim100-v104.apk
+            builds/orbit-clash-replace-com-orbitclash-game-v104.apk
+            builds/orbit-clash-replace-com-orbitclash-direct-v104.apk
             builds/APK_BADGING-*.txt
             builds/SHA256SUMS.txt
             builds/INSTALL_THIS_APK.txt
@@ -172,6 +162,6 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: orbit-clash-export-log
-          path: builds/export.log
+          path: builds/export-*.log
           if-no-files-found: warn
           retention-days: 7
